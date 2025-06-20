@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchArticleById } from "../api/news.api";
 import { ArticlePageSkeleton } from "./ArticlePageSkeleton";
+import { CommentSection } from '../components/features/comments/CommentSection';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // From shadcn/ui
 
 export const ArticlePage = () => {
@@ -137,6 +138,7 @@ export const ArticlePage = () => {
           Read Full Article at {article.source.name}
         </a>
       </div>
+       <CommentSection newsId={id} />
     </div>
   );
 };

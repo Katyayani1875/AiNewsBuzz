@@ -57,4 +57,4 @@ const getIoInstance = () => {
   return ioInstance;
 };
 
-module.exports = { app, server, getIoInstance }; // Export the function
+module.exports = { app, server}; // Export the function
