@@ -27,4 +27,9 @@ export const postComment = async ({ newsId, text, parentCommentId = null }) => {
   return response.data;
 };
 
-// We will add like/dislike functions here later
+export const likeComment = async (commentId) => {
+  const response = await api.post(`/comments/like/${commentId}`, {}, {
+    headers: getAuthHeaders(),
+  });
+  return response.data;
+};
