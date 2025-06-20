@@ -1,8 +1,5 @@
 import axios from "axios";
 
-// src/api/auth.api.js
-import axios from 'axios';
-
 // Ensure you have this in your .env file at the root of your frontend project:
 // VITE_API_URL=http://localhost:5000/api
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
