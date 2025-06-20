@@ -1,6 +1,8 @@
 // ai-newsbuzz-backend/src/controllers/commentController.js
 const Comment = require("../models/Comment");
 const News = require("../models/News");
+const Notification = require("../models/Notification"); // <-- IMPORT Notification model
+const { getIoInstance } = require("../socket"); // <-- UPDATED: Import from socket.js
 const logger = require("../utils/logger");
 
 // Create a comment
@@ -8,36 +10,92 @@ const createComment = async (req, res) => {
   const { newsId, text, parentCommentId } = req.body;
   const userId = req.user._id; // Get user ID from the authenticated user
 
-  if (!newsId || !text) {
-    return res.status(400).json({ message: "News ID and text are required" });
+  console.log("--- [START] Create Comment ---");
+  console.log(`User [${userId}] is commenting on News [${newsId}]`);
+  if (parentCommentId) {
+    console.log(`This is a REPLY to Parent Comment [${parentCommentId}]`);
   }
 
   try {
+    const newsArticle = await News.findById(newsId);
+    if (!newsArticle) {
+      console.log(`[ERROR] News article with ID [${newsId}] not found.`);
+      return res.status(404).json({ message: "News article not found" });
+    }
+
     const comment = new Comment({
       news: newsId,
       user: userId,
       text: text,
+      parentComment: parentCommentId || null,
     });
 
+    const savedComment = await comment.save();
+    console.log(`[SUCCESS] Comment saved to DB with ID [${savedComment._id}]`);
+
+    // --- NOTIFICATION LOGIC ---
+    const io = getIoInstance();
+
+    // Check if it's a reply to trigger notification logic
     if (parentCommentId) {
+      console.log("[INFO] Entering notification logic for a reply.");
+
       const parentComment = await Comment.findById(parentCommentId);
       if (!parentComment) {
-        return res.status(404).json({ message: "Parent comment not found" });
+        console.log(
+          `[ERROR] Parent comment [${parentCommentId}] not found during notification check.`
+        );
+        // Note: The reply is already saved, we just can't create a notification.
+        // This is okay to proceed from, but good to log.
+      } else {
+        console.log(
+          `[INFO] Parent comment found. Recipient should be [${parentComment.user}]`
+        );
+
+        // IMPORTANT CHECK: Don't notify if a user replies to their own comment
+        if (parentComment.user.toString() !== userId.toString()) {
+          console.log(
+            "[INFO] Sender and recipient are different. Creating notification..."
+          );
+
+          const notification = new Notification({
+            recipient: parentComment.user,
+            sender: userId,
+            type: "reply",
+            newsArticle: newsId,
+            comment: parentCommentId,
+          });
+
+          await notification.save();
+          console.log(
+            `[SUCCESS] Notification saved to DB with ID [${notification._id}] for user [${notification.recipient}]`
+          );
+
+          // Emit the real-time event
+          io.to(parentComment.user.toString()).emit(
+            "new_notification",
+            notification
+          );
+          console.log(
+            `[SOCKET.IO] Emitting 'new_notification' to room [${parentComment.user.toString()}]`
+          );
+        } else {
+          console.log(
+            "[INFO] User is replying to their own comment. No notification will be sent."
+          );
+        }
       }
-      comment.parentComment = parentCommentId; // Set the parent comment
-    }
 
-    const savedComment = await comment.save();
-
-    // If it's a reply, update the parent comment's replies array
-    if (parentCommentId) {
+      // Update the parent comment's replies array
       await Comment.findByIdAndUpdate(parentCommentId, {
         $push: { replies: savedComment._id },
       });
     }
 
+    console.log("--- [END] Create Comment ---");
     res.status(201).json(savedComment);
   } catch (error) {
+    console.error("--- [FATAL ERROR] in createComment ---", error);
     logger.error(`Error creating comment: ${error.message}`);
     res.status(500).json({ message: "Server error" });
   }
