@@ -38,3 +38,13 @@ export const updateUserProfile = async (formData) => {
     throw new Error(error.response?.data?.message || 'Could not update profile.');
   }
 };
+
+export const fetchUserComments = async (username) => {
+  const response = await api.get(`/users/${username}/comments`);
+  return response.data;
+};
+
+export const fetchUserLikedComments = async (username) => {
+  const response = await api.get(`/users/${username}/likes`);
+  return response.data;
+};
