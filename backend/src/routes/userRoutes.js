@@ -6,8 +6,10 @@ const {
   updateUserProfile,
   getPublicProfile,
   getMyProfile,
+  getUserComments,
   registerUser,
   loginUser,
+   getUserLikedComments,
 } = require("../controllers/authController");
 const { verifyToken } = require("../middlewares/authMiddleware");
 
@@ -32,5 +34,7 @@ router.put(
 
 // GET a public user profile by username
 router.get("/:username", getPublicProfile);
+router.get('/:username/comments', getUserComments);
+router.get('/:username/likes', getUserLikedComments);
 
 module.exports = router;

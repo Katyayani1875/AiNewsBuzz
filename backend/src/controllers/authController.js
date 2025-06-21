@@ -3,6 +3,7 @@ const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const logger = require("../utils/logger");
+const Comment = require('../models/Comment'); 
 const { cloudinary } = require("../config/cloudinary"); // Import Cloudinary
 
 // Generate a JWT
@@ -145,6 +146,55 @@ const updateUserProfile = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+const getUserComments = async (req, res) => {
+  try {
+    const user = await User.findOne({ username: req.params.username });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Now that 'Comment' is imported, this line will work correctly.
+    const comments = await Comment.find({ user: user._id })
+      .populate({
+        path: 'news',
+        select: 'title _id' // Also select the ID for linking
+      })
+      .sort({ createdAt: -1 })
+      .limit(20);
+
+    res.json(comments);
+  } catch (error) {
+    logger.error(`Error fetching user comments: ${error.message}`);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+const getUserLikedComments = async (req, res) => {
+  try {
+    const user = await User.findOne({ username: req.params.username });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Find all comments where the 'likes' array contains this user's ID
+    const likedComments = await Comment.find({ likes: user._id })
+      .populate({
+        path: 'news',
+        select: 'title _id'
+      })
+      .populate({ // Also populate the original author of the liked comment
+        path: 'user',
+        select: 'username profilePicture'
+      })
+      .sort({ createdAt: -1 })
+      .limit(20);
+
+    res.json(likedComments);
+  } catch (error) {
+    logger.error(`Error fetching user's liked comments: ${error.message}`);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 
 // EXPORT all functions
 module.exports = {
@@ -153,4 +203,6 @@ module.exports = {
   getMyProfile,
   updateUserProfile,
   getPublicProfile,
+   getUserComments,
+   getUserLikedComments,
 };
