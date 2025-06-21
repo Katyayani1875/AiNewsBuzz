@@ -1,4 +1,4 @@
-// ai-newsbuzz-backend/src/routes/commentRoutes.js
+// src/routes/commentRoutes.js
 const express = require("express");
 const {
   createComment,
@@ -6,14 +6,16 @@ const {
   likeComment,
   dislikeComment,
   flagComment,
+  deleteComment, // <-- IMPORT
 } = require("../controllers/commentController");
-const { verifyToken } = require("../middlewares/authMiddleware"); // Ensure authentication
+const { verifyToken } = require("../middlewares/authMiddleware");
 const router = express.Router();
 
-router.post("/", verifyToken, createComment); // Create a comment (requires auth)
-router.get("/:newsId", getCommentsByNewsId); // Get comments for a news item
-router.post("/like/:commentId", verifyToken, likeComment); // Like a comment (requires auth)
-router.post("/dislike/:commentId", verifyToken, dislikeComment); // Dislike a comment (requires auth)
-router.post("/flag/:commentId", verifyToken, flagComment); // Flag a comment (requires auth)
+router.post("/", verifyToken, createComment);
+router.get("/:newsId", getCommentsByNewsId);
+router.post("/like/:commentId", verifyToken, likeComment);
+router.post("/dislike/:commentId", verifyToken, dislikeComment);
+router.post("/flag/:commentId", verifyToken, flagComment);
+// router.delete("/:commentId", verifyToken, deleteComment);
 
 module.exports = router;

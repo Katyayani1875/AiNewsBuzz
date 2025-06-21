@@ -1,79 +1,55 @@
-// src/services/newsFetcher.js
 const axios = require("axios");
 const News = require("../models/News");
 const logger = require("../utils/logger");
+const { categorizeArticle } = require("./geminiCategorizationService");
 require("dotenv").config();
-const { categorizeArticle } = require("./geminiCategorizationService"); // Import
+
 const GNEWS_API_KEY = process.env.GNEWS_API_KEY;
 const BASE_URL = "https://gnews.io/api/v4";
-const DEFAULT_PARAMS = {
-  apikey: GNEWS_API_KEY,
-  lang: "en",
-  country: "us",
-};
-
-const maxRequestsPerSecond = 0.2;
 
 const fetchNewsFromGNews = async (
   topic,
   language = "en",
   country = "us",
-  max = 1
+  max = 10
 ) => {
   try {
     const params = {
-      ...DEFAULT_PARAMS,
-      topic: topic, // Add the topic
+      apikey: GNEWS_API_KEY,
       lang: language,
       country: country,
       max: max,
+      topic: topic,
     };
-
     const response = await axios.get(`${BASE_URL}/top-headlines`, { params });
-    if (response.data && response.data.articles) {
-      return response.data.articles;
-    } else {
-      logger.warn(
-        `GNews API returned no articles for topic: ${topic}, language: ${language}, country: ${country}`
-      );
-      return [];
-    }
+    return response.data?.articles || [];
   } catch (error) {
-    if (error.response && error.response.status === 429) {
-      logger.warn(
-        `GNews API rate limit exceeded for topic "${topic}". Retrying in 60 seconds...`
-      );
-      await new Promise((resolve) => setTimeout(resolve, 60000)); // Wait 60 seconds
-      return await fetchNewsFromGNews(topic, language, country, max); // Retry the same request
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      logger.error(`[GNEWS-FATAL] Invalid API Key. Please check your .env file. Status: ${error.response.status}`);
+    } else if (error.response?.status === 429) {
+      logger.warn(`[GNEWS-RATE-LIMIT] Rate limit hit for topic "${topic}". This will be handled by the cron schedule.`);
+    } else {
+      logger.error(`[GNEWS-FETCH-ERROR] for topic ${topic}: ${error.message}`);
     }
-    logger.error(
-      `Error fetching news from GNews for topic ${topic}: ${error.message}`
-    );
-    return [];
+    return []; // Return empty array on any failure
   }
 };
 
-const saveNewsToDatabase = async (newsData) => {
-  const savedArticles = []; // Store the saved articles to summarize
-
+const saveNewsToDatabase = async (newsData, initialTopic = 'general') => {
+  const savedArticles = [];
   for (const article of newsData) {
     try {
-      // Check if the article already exists by gnewsId
-      const gnewsId = article.guid || article.url;
+      const gnewsId = article.url;
       const existingNews = await News.findOne({ gnewsId });
 
       if (!existingNews) {
-        let topic = article.topic ? article.topic.toLowerCase() : "general"; // Use API topic if available
-
-        // Fallback to source.name if topic is missing or empty
-        if ((!topic || topic === "general") && article.content) {
-          // If no topic or is general, categorize with Gemini
-          const geminiCategory = await categorizeArticle(article.content); // <--- Call Gemini
-          if (geminiCategory) {
-            topic = geminiCategory;
+        let determinedTopic = initialTopic;
+        if (article.content) {
+          const geminiCategory = await categorizeArticle(article.content);
+          if (geminiCategory && geminiCategory !== 'other') {
+            determinedTopic = geminiCategory;
           }
         }
-
         const newsItem = new News({
           gnewsId,
           title: article.title,
@@ -82,23 +58,18 @@ const saveNewsToDatabase = async (newsData) => {
           image: article.image,
           description: article.description,
           content: article.content,
-          publishedAt: article.publishedAt,
-          topic: topic, // Assign the determined topic
-          language: article.language,
-          country: article.country,
+          publishedAt: new Date(article.publishedAt),
+          topic: determinedTopic,
         });
-
         const savedArticle = await newsItem.save();
-        logger.info(`News item saved: ${article.title}`);
-        savedArticles.push(savedArticle); // Add to the array
-      } else {
-        logger.debug(`News item already exists: ${article.title}`);
+        logger.info(`Saved new article with topic "${determinedTopic}": ${article.title}`);
+        savedArticles.push(savedArticle);
       }
     } catch (error) {
-      logger.error(`Error saving news item: ${error.message}`);
+      logger.error(`[SAVE-DB-ERROR] Failed for article "${article.title}": ${error.message}`);
     }
   }
-  return savedArticles; // Return the saved articles to refreshNews
+  return savedArticles;
 };
 
 module.exports = { fetchNewsFromGNews, saveNewsToDatabase };
