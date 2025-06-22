@@ -4,74 +4,45 @@ const logger = require("../utils/logger");
 require("dotenv").config();
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_SENTIMENT_API_KEY = process.env.GEMINI_SENTIMENT_API_KEY; // Get the new key
-const MODEL_NAME = "gemini-1.5-flash"; // Using the latest flash model
+const MODEL_NAME = "gemini-1.5-flash";
 
-// This instance is for general purpose generation (ELI5, Bullets)
-const genAIGeneral = new GoogleGenerativeAI(GEMINI_API_KEY);
+if (!GEMINI_API_KEY) {
+  logger.error("FATAL: GEMINI_API_KEY is missing from .env file.");
+  process.exit(1);
+}
 
-// This instance is ONLY for sentiment analysis, using the separate key
-const genAISentiment = new GoogleGenerativeAI(GEMINI_SENTIMENT_API_KEY);
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
-const generateTextWithGemini = async (prompt) => {
+const generateText = async (prompt, temperature = 0.5) => {
   try {
-    const model = genAIGeneral.getGenerativeModel({ model: MODEL_NAME });
+    const model = genAI.getGenerativeModel({ model: MODEL_NAME, generationConfig: { temperature } });
     const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    return text;
+    return result.response.text().trim();
   } catch (error) {
-    logger.error(`Gemini General API Error: ${error.message}`);
+    logger.error(`[GEMINI-SERVICE-ERROR] ${error.message}`);
     return null;
   }
 };
 
-const generateELI5 = async (text) => {
-  const prompt = `Explain the following news article simply, as if for a 5-year-old:\n\n---\n\n${text}`;
-  return await generateTextWithGemini(prompt);
+const generateTldrSummary = (text) => generateText(`Provide a TL;DR summary for this: ${text}`);
+const generateELI5 = (text) => generateText(`Explain this simply: ${text}`);
+const generateBulletPoints = (text) => generateText(`Summarize this in bullet points: ${text}`);
+const analyzeSentiment = async (text) => {
+  const prompt = `Analyze sentiment. Respond only with "positive", "negative", or "neutral". Text: "${text}"`;
+  const sentiment = await generateText(prompt, 0);
+  return ["positive", "negative", "neutral"].includes(sentiment) ? sentiment : "neutral";
 };
-
-const generateBulletPoints = async (text) => {
-  const prompt = `Summarize the key points of the following news article in a bulleted list:\n\n---\n\n${text}`;
-  return await generateTextWithGemini(prompt);
-};
-
-const translateText = async (text, targetLanguage = "es") => {
-  const prompt = `Translate the following text to ${targetLanguage}:\n\n---\n\n${text}`;
-  return await generateTextWithGemini(prompt);
-};
-
-// **** NEW FUNCTION FOR SENTIMENT ANALYSIS ****
-const analyzeSentimentWithGemini = async (text) => {
-  try {
-    const model = genAISentiment.getGenerativeModel({
-      model: MODEL_NAME,
-      generationConfig: { temperature: 0 }, // Set temperature to 0 for deterministic classification
-    });
-
-    const prompt = `Analyze the sentiment of the following text. Respond with only ONE of these words: "positive", "negative", or "neutral".\n\nText: "${text}"`;
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const sentiment = response.text().trim().toLowerCase();
-
-    // Validate the response to ensure it's one of the expected values
-    if (["positive", "negative", "neutral"].includes(sentiment)) {
-      console.log(`Gemini Sentiment Analysis Result: ${sentiment}`); // For debugging
-      return sentiment;
-    }
-
-    logger.warn("Gemini sentiment analysis failed to produce a valid sentiment:", sentiment);
-    return "neutral"; // Fallback to neutral if the response is not as expected
-  } catch (error) {
-    logger.error(`Gemini Sentiment API Error: ${error.message}`);
-    return null;
-  }
+const categorizeArticle = async (text) => {
+  const prompt = `Categorize this article into one: technology, business, sports, world, politics, science, entertainment, health. Respond with only the category name. Content: ${text}`;
+  const category = await generateText(prompt, 0);
+  const validCategories = ["technology", "business", "sports", "world", "politics", "science", "entertainment", "health"];
+  return validCategories.includes(category) ? category : 'general';
 };
 
 module.exports = {
+  generateTldrSummary,
   generateELI5,
   generateBulletPoints,
-  translateText,
-  analyzeSentimentWithGemini, // Export the new function
+  analyzeSentiment,
+  categorizeArticle,
 };

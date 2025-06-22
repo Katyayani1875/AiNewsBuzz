@@ -1,129 +1,79 @@
-// src/controllers/summaryController.js
-
-// **** CORRECTED IMPORT PATHS ****
-const { summarizeText } = require("../services/cohereService");
-const {
-  generateELI5,
-  generateBulletPoints,
-  analyzeSentimentWithGemini,
-} = require("../services/geminiService"); // Assuming you added sentiment analysis here
+// src/controllers/summaryController.js (FINAL, CORRECTED EXPORTS)
+const { generateTldrSummary, generateELI5, generateBulletPoints, analyzeSentiment, categorizeArticle } = require("../services/geminiService");
 const News = require("../models/News");
 const Summary = require("../models/Summary");
 const logger = require("../utils/logger");
 
-const createSummariesForNews = async (newsItemId) => {
-  // This log is already working, which is good.
-  console.log(
-    `--- [START] Processing summaries for News ID: ${newsItemId} ---`
-  );
+const isPaywalled = (text) => !text || text.toLowerCase().includes('subscribe to read');
 
+const createSummary = async (newsId, type, content, sentiment = null) => {
+  const summary = new Summary({ news: newsId, type, content, sentiment });
+  await summary.save();
+  await News.findByIdAndUpdate(newsId, { $push: { summaries: summary._id } });
+};
+
+// This is the main processing logic used by both the cron job and the on-demand endpoint.
+const processArticleAI = async (newsItemId) => {
+  const newsItem = await News.findById(newsItemId);
+  if (!newsItem || newsItem.isProcessed) {
+    if (newsItem) { // If it exists but was already processed, just ensure the flag is set.
+        newsItem.isProcessed = true;
+        await newsItem.save();
+    }
+    return;
+  }
+  
+  logger.info(`[AI-PROCESS] Starting tasks for article: ${newsItem._id}`);
   try {
-    const newsItem = await News.findById(newsItemId);
-    if (!newsItem || !newsItem.content) {
-      logger.warn(
-        `News item not found or missing content for ID: ${newsItemId}`
-      );
-      return;
+    if (newsItem.content) {
+      const preciseTopic = await categorizeArticle(newsItem.content);
+      if (preciseTopic) newsItem.topic = preciseTopic;
     }
-
-    // Log the content being sent to the APIs for verification
-    // console.log(`Article Content to Summarize: "${newsItem.content.substring(0, 100)}..."`);
-
-    const articleText = newsItem.content;
-
-    // --- LOGGING STEP 1: Test Cohere ---
-    const tldrSummary = await summarizeText(articleText); // Corrected from cohereSummarize
-    console.log(`[DEBUG] Cohere TLDR Result for ${newsItemId}:`, tldrSummary); // <-- ADDED LOG
-
-    let sentiment = null;
-    if (tldrSummary) {
-      // --- LOGGING STEP 2: Test Gemini Sentiment ---
-      sentiment = await analyzeSentimentWithGemini(tldrSummary);
-      console.log(
-        `[DEBUG] Gemini Sentiment Result for ${newsItemId}:`,
-        sentiment
-      ); // <-- ADDED LOG
+    
+    if (!isPaywalled(newsItem.content)) {
+      const [tldr, bullets, eli5] = await Promise.all([
+        generateTldrSummary(newsItem.content),
+        generateBulletPoints(newsItem.content),
+        generateELI5(newsItem.content),
+      ]);
+      if (tldr) {
+        const sentiment = await analyzeSentiment(tldr);
+        await createSummary(newsItem._id, "tldr", tldr, sentiment);
+      }
+      if (bullets) await createSummary(newsItem._id, "bullets", bullets);
+      if (eli5) await createSummary(newsItem._id, "eli5", eli5);
     }
-
-    // --- LOGGING STEP 3: Test Gemini Bullets ---
-    const bulletSummary = await generateBulletPoints(articleText);
-    console.log(
-      `[DEBUG] Gemini Bullets Result for ${newsItemId}:`,
-      bulletSummary
-    ); // <-- ADDED LOG
-
-    // --- LOGGING STEP 4: Test Gemini ELI5 ---
-    const eli5Summary = await generateELI5(articleText);
-    console.log(`[DEBUG] Gemini ELI5 Result for ${newsItemId}:`, eli5Summary); // <-- ADDED LOG
-
-    // Store summaries
-    if (tldrSummary) {
-      await createSummary(newsItemId, "tldr", tldrSummary, sentiment);
-    }
-    if (bulletSummary) {
-      await createSummary(newsItemId, "bullets", bulletSummary);
-    }
-    if (eli5Summary) {
-      await createSummary(newsItemId, "eli5", eli5Summary);
-    }
-
-    console.log(`--- [END] Finished processing for News ID: ${newsItemId} ---`);
+    
+    newsItem.isProcessed = true;
+    await newsItem.save();
+    logger.info(`[AI-PROCESS] Finished tasks for article: ${newsItem._id}`);
   } catch (error) {
-    logger.error(
-      `Error in createSummariesForNews for ID ${newsItemId}: ${error.message}`
-    );
+    logger.error(`[AI-PROCESS-FATAL] Error for article ${newsItem._id}: ${error.message}`);
   }
 };
 
-// The createSummary function remains the same, but no longer needs the generateAudio call
-const createSummary = async (
-  newsId,
-  type,
-  content,
-  sentiment = null,
-  language = "en"
-) => {
+// This is the controller function for the API endpoint.
+const generateAndGetSummaries = async (req, res) => {
+  const { newsId } = req.params;
   try {
-    const summary = new Summary({
-      news: newsId,
-      type: type,
-      content: content,
-      sentiment: sentiment,
-      language: language,
-    });
+    let newsItem = await News.findById(newsId);
+    if (!newsItem) return res.status(404).json({ message: "Article not found." });
 
-    const savedSummary = await summary.save();
-    await News.findByIdAndUpdate(
-      newsId,
-      { $push: { summaries: savedSummary._id } },
-      { new: true }
-    );
-
-    console.log(
-      `✅ SUCCESS: Saved '${type}' summary to DB for News ID: ${newsId}`
-    );
-    logger.info(`Summary of type ${type} created for news item ${newsId}`);
-  } catch (error) {
-    console.error(
-      `❌ ERROR: Failed to save '${type}' summary to DB for News ID: ${newsId}`,
-      error
-    );
-    logger.error(`Error creating summary in DB: ${error.message}`);
-  }
-};
-
-const getSummariesForNews = async (req, res) => {
-  try {
-    const newsId = req.params.newsId;
-    const newsItem = await News.findById(newsId).populate("summaries");
-    if (!newsItem) {
-      return res.status(404).json({ message: "News item not found" });
+    // If summaries don't exist yet, process the article now.
+    if (newsItem.summaries.length === 0) {
+      await processArticleAI(newsId);
     }
-    res.json(newsItem.summaries);
+    
+    const updatedNewsItem = await News.findById(newsId).populate("summaries");
+    res.json(updatedNewsItem.summaries);
   } catch (error) {
-    logger.error(`Error fetching summaries: ${error.message}`);
-    res.status(500).json({ message: "Server error" });
+    logger.error(`On-demand summary failed for ${newsId}: ${error.message}`);
+    res.status(500).json({ message: "Failed to generate summaries." });
   }
 };
 
-module.exports = { createSummariesForNews, getSummariesForNews };
+// ** THE FIX IS HERE: Only export the functions that are actually used elsewhere **
+module.exports = {
+  processArticleAI, // Used by server.js
+  generateAndGetSummaries, // Used by summaryRoutes.js
+};
