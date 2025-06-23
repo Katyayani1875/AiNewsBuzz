@@ -6,7 +6,7 @@ const {
   likeComment,
   dislikeComment,
   flagComment,
-  deleteComment, // <-- IMPORT
+  deleteComment, 
 } = require("../controllers/commentController");
 const { verifyToken } = require("../middlewares/authMiddleware");
 const router = express.Router();
@@ -16,6 +16,6 @@ router.get("/:newsId", getCommentsByNewsId);
 router.post("/like/:commentId", verifyToken, likeComment);
 router.post("/dislike/:commentId", verifyToken, dislikeComment);
 router.post("/flag/:commentId", verifyToken, flagComment);
-// router.delete("/:commentId", verifyToken, deleteComment);
+router.delete("/:commentId", verifyToken, deleteComment);
 
 module.exports = router;

@@ -20,7 +20,7 @@ export const RegisterPage = () => {
         id: data._id,
         profilePicture: data.profilePicture,
       });
-      setTimeout(() => navigate('/'), 1500); // Brief delay to confirm registration success
+      setTimeout(() => navigate('/news'), 1500); // Brief delay to confirm registration success
     },
     onError: (error) => {
       setError(error.response?.data?.message || 'Registration failed. Please try again.');
@@ -30,7 +30,7 @@ export const RegisterPage = () => {
   const validateInputs = () => {
     if (!username.trim()) return 'Username is required.';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Invalid email format.';
-    if (password.length < 6) return 'Password must be at least 6 characters long.';
+    if (password.length < 8) return 'Password must be at least 8 characters long.';
     return '';
   };
 
@@ -46,61 +46,74 @@ export const RegisterPage = () => {
   };
 
   return (
-    <div className="container mx-auto max-w-md p-8 text-white">
-      <div className="bg-[#161B22] border border-gray-800 rounded-lg p-8 shadow-lg">
-        <h2 className="text-3xl font-bold text-center text-white mb-2">Create Your Account</h2>
-        <p className="text-center text-gray-400 mb-6">Join the AI NewsBuzz community.</p>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-8 border border-gray-300">
+        <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">Create Your Account</h2>
+        <p className="text-center text-gray-500 mb-6">Join the AI NewsBuzz community.</p>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-sm font-bold text-gray-400 block mb-2">Username</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              className="w-full p-3 bg-gray-900 border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 transition"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
             />
           </div>
           <div>
-            <label className="text-sm font-bold text-gray-400 block mb-2">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full p-3 bg-gray-900 border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 transition"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
             />
           </div>
           <div>
-            <label className="text-sm font-bold text-gray-400 block mb-2">Password</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full p-3 bg-gray-900 border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 transition"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
             />
           </div>
 
-          {error && <p className="text-red-400 text-center text-sm">{error}</p>}
+          {error && <p className="text-center text-red-500 text-sm">{error}</p>}
 
           <button
             type="submit"
             disabled={mutation.isLoading}
-            className="w-full bg-cyan-500 text-black font-bold py-3 rounded-lg hover:bg-cyan-400 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
+            className="w-full bg-gray-800 text-white font-semibold py-2 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition"
           >
             {mutation.isLoading ? 'Creating Account...' : 'Sign Up'}
           </button>
         </form>
 
-        {mutation.isSuccess && (
-          <p className="text-center text-green-400 mt-4">Account created successfully!</p>
-        )}
+        <div className="my-4 flex items-center">
+          <div className="flex-grow border-t border-gray-300"></div>
+          <span className="mx-4 text-gray-500">OR</span>
+          <div className="flex-grow border-t border-gray-300"></div>
+        </div>
 
-        <p className="text-center text-gray-400 mt-6 text-sm">
+        <button
+          className="w-full flex items-center justify-center bg-gray-100 text-gray-700 border border-gray-300 py-2 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 transition"
+        >
+          <img
+            src="https://img.icons8.com/color/20/000000/google-logo.png"
+            alt="Google"
+            className="h-5 w-5 mr-2"
+          />
+          Sign up with Google
+        </button>
+
+        <p className="text-center text-gray-500 mt-6 text-sm">
           Already have an account?{' '}
-          <Link to="/login" className="font-semibold text-cyan-400 hover:underline">
+          <Link to="/login" className="font-medium text-indigo-600 hover:underline">
             Log In
           </Link>
         </p>
