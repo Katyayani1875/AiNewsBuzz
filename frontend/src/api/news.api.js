@@ -61,3 +61,15 @@ export const triggerLiveNewsRefresh = async (topic) => {
     throw new Error(error.response?.data?.message || 'Failed to check for new news.');
   }
 };
+export const pollForSummaries = async (articleId) => {
+    try {
+        const response = await fetch(`/api/articles/${articleId}/summaries/status`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error polling for summaries:', error);
+        throw error;
+    }
+};

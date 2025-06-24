@@ -1,38 +1,78 @@
-// src/components/layout/Footer.jsx
+// src/components/layout/Footer.jsx (Redesigned with Multi-Column Layout)
 
 import { Link } from 'react-router-dom';
 
-const Logo = () => (
-    <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M6 12L12 6L18 12L12 18L6 12Z" fill="url(#paint0_linear_footer)" />
-      <path d="M14 18L20 12L26 18L20 24L14 18Z" fill="url(#paint1_linear_footer)" />
-      <defs>
-        <linearGradient id="paint0_linear_footer" x1="12" y1="6" x2="12" y2="18" gradientUnits="userSpaceOnUse"><stop stopColor="#22D3EE"/><stop offset="1" stopColor="#0EA5E9"/></linearGradient>
-        <linearGradient id="paint1_linear_footer" x1="20" y1="12" x2="20" y2="24" gradientUnits="userSpaceOnUse"><stop stopColor="#A78BFA"/><stop offset="1" stopColor="#818CF8"/></linearGradient>
-      </defs>
-    </svg>
-  );
+// A reusable component for the footer columns to keep the code clean
+const FooterColumn = ({ title, links }) => (
+    <div>
+        <h3 className="text-sm font-semibold text-foreground tracking-wider uppercase">{title}</h3>
+        <ul className="mt-4 space-y-3">
+            {links.map((link) => (
+                <li key={link.name}>
+                    <a href={link.href} target={link.isExternal ? "_blank" : "_self"} rel="noopener noreferrer" className="text-base text-muted-foreground hover:text-primary transition-colors">
+                        {link.name}
+                    </a>
+                </li>
+            ))}
+        </ul>
+    </div>
+);
 
 export const Footer = () => {
-  return (
-    <footer className="bg-secondary/50 border-t border-border">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-3">
-            <Logo />
-            <span className="font-bold text-foreground">AI NewsBuzz</span>
-          </div>
-          <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
-            <Link to="/about" className="hover:text-primary transition-colors">About</Link>
-            <Link to="/contact" className="hover:text-primary transition-colors">Contact</Link>
-            <Link to="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link>
-            <Link to="/terms" className="hover:text-primary transition-colors">Terms of Service</Link>
-          </nav>
-          <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} AI NewsBuzz. All rights reserved.
-          </p>
-        </div>
-      </div>
-    </footer>
-  );
+    // Define the links for each column. This makes the JSX much cleaner.
+    const builtWithLinks = [
+        { name: 'React & Vite', href: 'https://react.dev' },
+        { name: 'Node.js & Express', href: 'https://nodejs.org' },
+        { name: 'MongoDB', href: 'https://mongodb.com' },
+        { name: 'Google Gemini API', href: 'https://ai.google.dev' },
+        { name: 'Tailwind CSS', href: 'https://tailwindcss.com' },
+    ];
+
+    const resourcesLinks = [
+        { name: 'GNews API', href: 'https://gnews.io' },
+        { name: 'TanStack Query', href: 'https://tanstack.com/query' },
+        { name: 'Zustand', href: 'https://github.com/pmndrs/zustand' },
+        { name: 'Socket.IO', href: 'https://socket.io' },
+    ];
+
+    const legalLinks = [
+        { name: 'GitHub', href: 'https://github.com', isExternal: true }, 
+        { name: 'Privacy Policy', href: '/privacy' },
+        { name: 'Terms of Service', href: '/terms' },
+    ];
+
+    return (
+        <footer className="bg-secondary/50 border-t border-border">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+                
+                {/* --- NEW MULTI-COLUMN LAYOUT --- */}
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
+                    
+                    {/* Column 1: About Section */}
+                    <div className="col-span-2 lg:col-span-2">
+                        <h3 className="text-sm font-semibold text-foreground tracking-wider uppercase">
+                            About AI NewsBuzz
+                        </h3>
+                        <p className="mt-4 text-base text-muted-foreground leading-relaxed">
+                            AI NewsBuzz is a proof-of-concept project designed to demonstrate a modern, full-stack application that leverages artificial intelligence to make global news more accessible and understandable.
+                        </p>
+                        <p className="mt-4 text-sm text-muted-foreground">
+                            Created by: <a href="#" className="font-semibold text-primary hover:underline">Katyayani Mishra</a> {/* Replace with your portfolio/linkedin link */}
+                        </p>
+                    </div>
+
+                    {/* Other Columns */}
+                    <FooterColumn title="Built With" links={builtWithLinks} />
+                    <FooterColumn title="Key Resources" links={resourcesLinks} />
+                    <FooterColumn title="Connect" links={legalLinks} />
+                </div>
+
+                {/* --- Bottom Copyright Bar --- */}
+                <div className="mt-12 border-t border-border pt-8 text-center text-sm text-muted-foreground">
+                    <p>© {new Date().getFullYear()} AI NewsBuzz. All Rights Reserved.</p>
+                </div>
+
+            </div>
+        </footer>
+    );
 };
