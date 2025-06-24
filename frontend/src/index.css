@@ -1,90 +1,74 @@
-/* src/index.css (PROFESSIONAL LIGHT THEME) */
-
-/*
-  1. Font Import: 'Inter' is the industry standard for clean, professional UIs.
-*/
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lora:wght@400;500;600;700&display=swap');
 
-
-/*
-  2. Tailwind CSS Directives
-*/
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/*
-  3. Base Layer Configuration with CSS Variables (Light Theme)
-*/
 @layer base {
+  /* --- DEFAULT LIGHT THEME (Unchanged) --- */
   :root {
-    /*
-      This is our new "Apple-inspired" light theme palette.
-      It uses shades of grey for a clean, professional, and less fatiguing look.
-    */
-    --background: 0 0% 100%;      /* White */
-    --foreground: 222.2 84% 4.9%; /* Near Black */
-
-    --card: 0 0% 100%;            /* Card background is also white */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 222.2 47.4% 11.2%; /* A strong, dark blue for primary actions */
+    --primary: 222.2 47.4% 11.2%;
     --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;   /* A very light grey for secondary elements */
+    --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
-
     --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%; /* Softer grey for muted text */
-
+    --muted-foreground: 215.4 16.3% 46.9%;
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
-
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;  /* A subtle border color */
+    --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
-
     --radius: 0.5rem;
   }
 
   /* 
-    The .dark class can be configured later if you want to re-introduce dark mode.
-    For now, the entire app will use the light theme defined above.
+    *** THE DARK THEME FIX IS HERE ***
+    These new HSL values create the deep, near-black theme you want.
   */
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 6.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 217.2 91.2% 59.8%;
-  }
+    --background: 240 10% 3.9%;    /* Near-black, very dark blue-grey */
+    --foreground: 0 0% 98%;        /* Almost white for high contrast */
+    
+    --card: 240 10% 5.9%;          /* A slightly lighter charcoal for cards */
+    --card-foreground: 0 0% 98%;
 
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 210 40% 98%;        /* Primary actions are now light against the dark bg */
+    --primary-foreground: 222.2 47.4% 11.2%; /* Text on primary buttons is dark */
+
+    --secondary: 240 4% 12%;       /* Dark grey for secondary elements */
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 4% 12%;
+    --muted-foreground: 240 5% 64.9%; /* Lighter grey for muted text */
+
+    --accent: 240 4% 12%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 4% 12%;          /* Subtle border color */
+    --input: 240 4% 12%;
+    --ring: 210 40% 98%;
+  }
 
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', sans-serif;
-    -webkit-font-smoothing: antialiased; /* Improves font rendering on macOS/iOS */
+    -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transition between themes */
   }
 }
