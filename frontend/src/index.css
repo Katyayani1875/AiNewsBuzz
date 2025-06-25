@@ -31,37 +31,37 @@
   }
 
   /* 
-    *** THE DARK THEME FIX IS HERE ***
-    These new HSL values create the deep, near-black theme you want.
+    *** THE NEW, PROFESSIONAL CHARCOAL DARK THEME ***
+    A sophisticated, neutral dark theme that isn't pure black.
   */
   .dark {
-    --background: 240 10% 3.9%;    /* Near-black, very dark blue-grey */
-    --foreground: 0 0% 98%;        /* Almost white for high contrast */
+    --background: 240 6% 10%;        /* Very dark charcoal, not pure black */
+    --foreground: 210 20% 90%;        /* Soft off-white for comfortable reading */
     
-    --card: 240 10% 5.9%;          /* A slightly lighter charcoal for cards */
-    --card-foreground: 0 0% 98%;
+    --card: 240 6% 12%;              /* Slightly lighter charcoal for cards */
+    --card-foreground: 210 20% 90%;
 
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 240 6% 10%;
+    --popover-foreground: 210 20% 90%;
 
-    --primary: 210 40% 98%;        /* Primary actions are now light against the dark bg */
-    --primary-foreground: 222.2 47.4% 11.2%; /* Text on primary buttons is dark */
+    --primary: 210 20% 98%;           /* Bright, clean white for primary buttons */
+    --primary-foreground: 240 6% 10%;   /* Dark text on primary buttons */
 
-    --secondary: 240 4% 12%;       /* Dark grey for secondary elements */
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 240 5% 18%;         /* A medium charcoal for secondary elements */
+    --secondary-foreground: 210 20% 98%;
 
-    --muted: 240 4% 12%;
-    --muted-foreground: 240 5% 64.9%; /* Lighter grey for muted text */
+    --muted: 240 5% 18%;
+    --muted-foreground: 240 5% 65%;   /* Lighter grey for muted text */
 
-    --accent: 240 4% 12%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 240 5% 18%;
+    --accent-foreground: 210 20% 98%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 20% 98%;
 
-    --border: 240 4% 12%;          /* Subtle border color */
-    --input: 240 4% 12%;
-    --ring: 210 40% 98%;
+    --border: 240 5% 18%;             /* Subtle border color */
+    --input: 240 5% 18%;
+    --ring: 210 20% 98%;
   }
 
   body {
@@ -71,4 +71,64 @@
     -moz-osx-font-smoothing: grayscale;
     transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transition between themes */
   }
+}
+
+/* Add this to your global CSS */
+.initials-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  
+  /* 
+    *** THE FIX IS HERE ***
+    We are now using the theme's CSS variables.
+    This automatically switches between light and dark mode colors.
+  */
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+/* Add this entire block to the end of your file */
+
+/* For Webkit-based browsers (Chrome, Safari, Edge) */
+.custom-scrollbar::-webkit-scrollbar {
+  @apply h-2; /* Sets height for horizontal scrollbar */
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-transparent; /* Makes the track invisible */
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply rounded-full bg-slate-300 dark:bg-slate-600;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-400 dark:bg-slate-500;
+}
+
+/* For Firefox */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 transparent; /* thumb color track color */
+}
+
+/* Add this to your main CSS file */
+
+/* For Webkit-based browsers (Chrome, Safari, Edge) */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* For IE, Edge, and Firefox */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+/* Add this at the end of your CSS file */
+textarea:not(:focus) {
+  border-bottom: 1px solid hsl(var(--border)) !important;
+  border-radius: 0 !important;
 }

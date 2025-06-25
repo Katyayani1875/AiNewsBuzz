@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'; // <-- Add useState here
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -172,7 +172,7 @@ export const ArticlePage = () => {
     if (!article) return <div className="text-center p-10">Article not found.</div>;
 
     const isSummarizing = summarizationMutation.isPending || 
-                         (isLoggedIn && (!article.summaries || article.summaries.length === 0));
+                     (isLoggedIn && (!article.summaries || article.summaries.length === 0));
 
     const tldrSummary = article.summaries?.find(s => s.type === 'tldr');
     const bulletSummary = article.summaries?.find(s => s.type === 'bullets');
