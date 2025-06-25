@@ -1,9 +1,5 @@
-// src/server.js (FINAL, "SMART QUEUE" ARCHITECTURE)
-
+// src/server.js 
 require("dotenv").config();
-
-// It's a Mongoose best practice to require all models at the entry point of your application.
-// This ensures they are all registered with Mongoose before any part of your app tries to use them.
 require("./models/User");
 require("./models/News");
 require("./models/Summary");
