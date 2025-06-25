@@ -132,3 +132,42 @@ textarea:not(:focus) {
   border-bottom: 1px solid hsl(var(--border)) !important;
   border-radius: 0 !important;
 }
+/* Add this entire block to the end of your main CSS file */
+
+@keyframes move-stars {
+  from { background-position: 0 0; }
+  to   { background-position: -10000px 5000px; }
+}
+
+.stars {
+  background-image: radial-gradient(1px 1px at 20px 30px, #eee, rgba(0,0,0,0)), 
+                    radial-gradient(1px 1px at 40px 70px, #fff, rgba(0,0,0,0)), 
+                    radial-gradient(1px 1px at 50px 160px, #ddd, rgba(0,0,0,0)),
+                    radial-gradient(1px 1px at 90px 40px, #fff, rgba(0,0,0,0)),
+                    radial-gradient(2px 2px at 150px 120px, #ddd, rgba(0,0,0,0));
+  background-repeat: repeat;
+  background-size: 200px 200px;
+  animation: move-stars 200s linear infinite;
+  opacity: 0;
+}
+
+.stars-2 {
+  background-size: 300px 300px;
+  animation-duration: 150s;
+}
+
+.stars-3 {
+  background-size: 400px 400px;
+  animation-duration: 100s;
+}
+/* Add this to your main CSS file */
+.noise-texture {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.03;
+  pointer-events: none;
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"><g fill="%23fff" fill-opacity="0.4"><rect x="0" y="0" width="800" height="800" /><rect x="100" y="100" width="700" height="700" /></g></svg>');
+}
