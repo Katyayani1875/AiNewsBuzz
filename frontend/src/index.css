@@ -171,3 +171,12 @@ textarea:not(:focus) {
   pointer-events: none;
   background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"><g fill="%23fff" fill-opacity="0.4"><rect x="0" y="0" width="800" height="800" /><rect x="100" y="100" width="700" height="700" /></g></svg>');
 }
+
+/* Add this to your main CSS file */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
