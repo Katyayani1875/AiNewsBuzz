@@ -1,76 +1,79 @@
-// src/controllers/newsController.js
+// src/controllers/newsController.js (FINAL, DEFINITIVE, AND COMPLETE)
 
-//this is fetching news from gnews and saving it to the database
-const {
-  fetchNewsFromGNews,
-  saveNewsToDatabase,
-} = require("../services/newsFetcher");
 const News = require("../models/News");
 const logger = require("../utils/logger");
-const { createSummariesForNews } = require("./summaryController"); // It's in the same 'controllers' directory
-
+const { fetchNewsFromGNews, saveNewsToDatabase } = require("../services/newsFetcher");
+const { processArticleAI } = require("./summaryController");
+/**
+ * Fetches news for the main feed, with correct filtering and pagination.
+ */
 const getNews = async (req, res) => {
-  const { topic, language, country, limit } = req.query;
-
+  const { topic, limit, offset } = req.query;
   try {
     const query = {};
-    if (topic) query.topic = topic.toLowerCase(); // Ensure case-insensitive topic matching
-    if (language) query.language = language;
-    if (country) query.country = country;
-
-    console.log("Query being used:", query); // Log the query object
+    if (topic && topic.toLowerCase() !== 'all') {
+      query.topic = topic.toLowerCase();
+    }
     const news = await News.find(query)
-      .sort({ publishedAt: -1 }) // Sort by most recent
-      .limit(parseInt(limit) || 10); // Default to 10 items if limit is not provided
-    console.log("Number of news articles found:", news.length); // Check how many articles are found
+      .sort({ publishedAt: -1, _id: -1 })
+      .skip(parseInt(offset) || 0)
+      .limit(parseInt(limit) || 9);
     res.json(news);
   } catch (error) {
-    logger.error(`Error getting news: ${error.message}`);
-    res.status(500).json({ message: "Server error" });
+    logger.error(`[GET_NEWS_ERROR] ${error.message}`);
+    res.status(500).json({ message: "Server error while fetching news." });
   }
 };
 
-const refreshNews = async (req, res) => {
-  const topic = req.query.topic;
-  const language = req.query.language || "en";
-  const country = req.query.country || "us";
-  const maxArticles = 10;
-
-  try {
-    // Fetch news from GNews
-    const newsData = await fetchNewsFromGNews(
-      topic ? topic.toLowerCase() : "general",
-      language,
-      country,
-      maxArticles
-    );
-    const savedArticles = await saveNewsToDatabase(newsData); // Save articles and get the saved documents back
-
-    // Now, iterate over the successfully saved articles to create summaries
-    for (const newsItem of savedArticles) {
-      await createSummariesForNews(newsItem._id); // Call the summary creation here.
-    }
-
-    res.status(200).json({ message: "News refreshed successfully" });
-  } catch (error) {
-    logger.error(`Error refreshing news: ${error.message}`);
-    res.status(500).json({ message: "Failed to refresh news" });
-  }
-};
-
+/**
+ * Fetches a single article by its ID for the detail page.
+ */
 const getNewsById = async (req, res) => {
   try {
     const newsItem = await News.findById(req.params.id).populate("summaries");
     if (!newsItem) {
-      return res.status(404).json({ message: "News item not found" });
+      return res.status(404).json({ message: "Article not found" });
     }
     res.json(newsItem);
   } catch (error) {
-    logger.error(`Error getting news by ID: ${error.message}`);
-    res.status(500).json({ message: "Server error" });
+    logger.error(`Error in getNewsById for ID ${req.params.id}: ${error.message}`);
+    res.status(500).json({ message: "Server error while fetching article." });
   }
 };
+const fetchLiveNewsForTopic = async (req, res) => {
+  // Use 'general' as a default if no topic is specified by the button
+  const topic = req.query.topic || 'general';
+  
+  logger.info(`[LIVE-FETCH] Received on-demand request for topic: ${topic}`);
+  try {
+    const newsData = await fetchNewsFromGNews({ topic: topic.toLowerCase(), max: 10 });
 
+    if (newsData.length === 0) {
+      return res.status(200).json({ message: "Feed is up to date. No new articles found." });
+    }
+
+    const savedArticleIds = await saveNewsToDatabase(newsData, topic.toLowerCase());
+    logger.info(`[LIVE-FETCH] Saved ${savedArticleIds.length} new live articles.`);
+    
+    // Asynchronously fire off the AI processing for only the new articles
+    for (const articleId of savedArticleIds) {
+      processArticleAI(articleId).catch(err => logger.error(`[LIVE-FETCH-AI-ERROR] for ${articleId}: ${err.message}`));
+    }
+
+    if (savedArticleIds.length > 0) {
+        res.status(200).json({ message: `Found and added ${savedArticleIds.length} new stories!` });
+    } else {
+        res.status(200).json({ message: "Feed is up to date." });
+    }
+  } catch (error) {
+    logger.error(`[LIVE-FETCH-ERROR] for topic "${topic}": ${error.message}`);
+    res.status(500).json({ message: "Failed to fetch live news." });
+  }
+};
+/**
+ * --- THIS IS THE MISSING FUNCTION DEFINITION ---
+ * Increments the click count for a given article.
+ */
 const incrementClickCount = async (req, res) => {
   try {
     const newsItem = await News.findById(req.params.id);
@@ -79,14 +82,17 @@ const incrementClickCount = async (req, res) => {
     }
     newsItem.clickCount += 1;
     await newsItem.save();
-    res.status(200).json({
-      message: "Click count incremented",
-      clickCount: newsItem.clickCount,
-    });
+    res.status(200).json({ message: "Click count incremented", clickCount: newsItem.clickCount });
   } catch (error) {
     logger.error(`Error incrementing click count: ${error.message}`);
     res.status(500).json({ message: "Server error" });
   }
 };
 
-module.exports = { getNews, refreshNews, getNewsById, incrementClickCount };
+// We now export all the functions that are actually used by newsRoutes.js
+module.exports = { 
+    getNews, 
+    getNewsById, 
+     fetchLiveNewsForTopic, 
+    incrementClickCount 
+};

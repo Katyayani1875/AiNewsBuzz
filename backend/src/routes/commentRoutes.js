@@ -1,21 +1,24 @@
-// src/routes/commentRoutes.js
 const express = require("express");
-const {
-  createComment,
-  getCommentsByNewsId,
-  likeComment,
-  dislikeComment,
-  flagComment,
-  deleteComment, // <-- IMPORT
-} = require("../controllers/commentController");
+const commentController = require("../controllers/commentController");
 const { verifyToken } = require("../middlewares/authMiddleware");
 const router = express.Router();
 
-router.post("/", verifyToken, createComment);
-router.get("/:newsId", getCommentsByNewsId);
-router.post("/like/:commentId", verifyToken, likeComment);
-router.post("/dislike/:commentId", verifyToken, dislikeComment);
-router.post("/flag/:commentId", verifyToken, flagComment);
-// router.delete("/:commentId", verifyToken, deleteComment);
+// Create a new comment
+router.post("/", verifyToken, commentController.createComment);
+
+// Get comments for a news article
+router.get("/:newsId", commentController.getCommentsByNewsId);
+
+// Like a comment
+router.post("/like/:commentId", verifyToken, commentController.likeComment);
+
+// Dislike a comment
+router.post("/dislike/:commentId", verifyToken, commentController.dislikeComment);
+
+// Flag a comment
+router.post("/flag/:commentId", verifyToken, commentController.flagComment);
+
+// Delete a comment
+router.delete("/:commentId", verifyToken, commentController.deleteComment);
 
 module.exports = router;

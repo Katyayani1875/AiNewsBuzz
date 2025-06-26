@@ -1,16 +1,15 @@
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+// src/components/features/news/NewsFeed.jsx (FINAL, CORRECTED AND OPTIMIZED)
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { fetchCachedNews, fetchLiveNews } from '../../../api/news.api'; // Import both functions
+import { fetchNews } from '../../../api/news.api'; // <-- CORRECTED IMPORT
 import { NewsArticleCard } from './NewsArticleCard';
 import { ArticleCardSkeleton } from './ArticleCardSkeleton';
 import { Fragment, useEffect } from 'react';
 import { useInView } from 'react-intersection-observer';
 
 export const NewsFeed = ({ topic }) => {
-  const queryClient = useQueryClient();
-  const { ref, inView } = useInView();
+  const { ref, inView } = useInView({ threshold: 0.5 });
 
-  // --- HOOK 1: For displaying cached data ---
   const {
     data,
     error,
@@ -19,82 +18,65 @@ export const NewsFeed = ({ topic }) => {
     isFetchingNextPage,
     status,
   } = useInfiniteQuery({
-    queryKey: ['news', topic], // The key identifies this specific feed
-    queryFn: ({ pageParam }) => fetchCachedNews({ pageParam, topic }),
+    queryKey: ['news', topic],
+    queryFn: fetchNews, // <-- CORRECTLY USES THE SINGLE FUNCTION
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextPage,
+    
+    // This configuration provides the "live + cached" feel automatically
+    staleTime: 1000 * 60 * 2, // Data is fresh for 2 mins; avoids refetch on quick navigation
+    refetchOnWindowFocus: true, // Auto-refreshes with latest news when user returns
   });
 
-  // --- HOOK 2: For triggering a live refresh ---
-  const refreshMutation = useMutation({
-    mutationFn: () => fetchLiveNews(topic),
-    onSuccess: () => {
-      // When the live refresh on the backend is complete,
-      // invalidate our local cache to pull in the new articles.
-      queryClient.invalidateQueries({ queryKey: ['news', topic] });
-    },
-  }); 
-
-  // Automatically trigger a live refresh when the component first mounts
-  // or when the topic changes.
+  // Effect for triggering infinite scroll
   useEffect(() => {
-    refreshMutation.mutate();
-  }, [topic]); // Dependency array ensures it runs when the topic changes
-
-  // Infinite scroll trigger
-  useEffect(() => {
-    if (inView && hasNextPage) {
+    if (inView && hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
     }
-  }, [inView, hasNextPage, fetchNextPage]);
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // Combine articles from all pages and remove duplicates
-  const allArticles = data?.pages.flatMap((page) => page.articles) || [];
-  const uniqueArticles = Array.from(
-    new Map(allArticles.map((article) => [article._id, article])).values()
-  );
-
-  // The rest of the component handles rendering based on the state
+  // Render Skeletons on initial load
   if (status === 'pending') {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {Array.from({ length: 9 }).map((_, index) => (
-          <ArticleCardSkeleton key={index} />
-        ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 9 }).map((_, index) => <ArticleCardSkeleton key={index} />)}
+        </div>
+    );
+  }
+
+  // Render an error message if the fetch fails
+  if (status === 'error') {
+    return (
+      <div className="text-center py-10 text-red-400 bg-[#161B22] rounded-lg">
+        <h3 className="text-xl font-bold mb-2">Oops! Something went wrong.</h3>
+        <p>{error.message}</p>
       </div>
     );
   }
 
-  if (status === 'error') {
-    return <div className="text-center text-red-400">Error: {error.message}</div>;
-  }
-
   return (
     <div>
-      {/* Optional: Show a subtle "refreshing" indicator */}
-      {refreshMutation.isPending && (
-        <div className="text-center text-sm text-cyan-400 mb-4 animate-pulse">
-          Checking for new stories...
-        </div>
-      )}
-
       <motion.div
         variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
         initial="hidden"
         animate="visible"
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
       >
-        {uniqueArticles.map((article) => (
-          <NewsArticleCard key={article._id} article={article} />
+        {data.pages.map((page, i) => (
+          <Fragment key={i}>
+            {page.articles.map((article) => (
+              <NewsArticleCard key={article._id} article={article} />
+            ))}
+          </Fragment>
         ))}
       </motion.div>
 
-      <div className="text-center mt-12 h-10">
+      <div className="flex justify-center mt-12 h-10">
         <button
           ref={ref}
           onClick={() => fetchNextPage()}
           disabled={!hasNextPage || isFetchingNextPage}
-          className="bg-cyan-500 text-black font-bold py-3 px-8 rounded-lg hover:bg-cyan-400 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
+          className="bg-cyan-500 text-black font-bold py-3 px-8 rounded-lg hover:bg-cyan-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isFetchingNextPage
             ? 'Loading more...'

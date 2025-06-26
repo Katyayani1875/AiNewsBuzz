@@ -4,87 +4,98 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const logger = require("../utils/logger");
 const Comment = require('../models/Comment'); 
-const { cloudinary } = require("../config/cloudinary"); // Import Cloudinary
+const { cloudinary } = require("../config/cloudinary");
+const crypto = require('crypto');
+const transporter = require('../config/mailer');
 
 // Generate a JWT
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: "30d", // Adjust as needed
+    expiresIn: "30d",
   });
 };
 
-// Register a new user
 const registerUser = async (req, res) => {
+   console.log("--- Backend Controller: Received a request to /auth/register ---");
+  console.log("Request Body:", req.body);
   const { username, email, password } = req.body;
-
   try {
     if (!username || !email || !password) {
-      return res.status(400).json({ message: "Please enter all fields" });
+      console.error("--- Backend Validation FAILED: One or more fields are missing ---");
+      console.error("Received values:", { username, email, password });
+      return res.status(400).json({ message: "Validation Failed: Please ensure all fields are provided." });
     }
-
     const userExists = await User.findOne({ $or: [{ email }, { username }] });
     if (userExists) {
-      return res.status(400).json({ message: "User already exists" });
+      return res.status(400).json({ message: "User with this email or username already exists." });
     }
 
-    const user = await User.create({
-      username,
-      email,
-      password,
-    });
+    const user = await User.create({ username, email, password });
 
     if (user) {
-      res.status(201).json({
+      // Create a clean user object, including the default profile picture
+      const userPayload = {
         _id: user._id,
+        id: user._id, // Add 'id' for frontend convenience
         username: user.username,
         email: user.email,
         isAdmin: user.isAdmin,
+        profilePicture: user.profilePicture,
+      };
+      
+      // **Send the exact same response structure as loginUser**
+      res.status(201).json({
         token: generateToken(user._id),
+        user: userPayload,
       });
     } else {
-      res.status(400).json({ message: "Invalid user data" });
+      res.status(400).json({ message: "Invalid user data during creation." });
     }
   } catch (error) {
-    logger.error(`Registration error: ${error.message}`);
-    res.status(500).json({ message: "Server error" });
+    console.error(`Registration error: ${error.message}`);
+    res.status(500).json({ message: "Server error during registration." });
   }
 };
 
-// User login
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
-
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select('+password');
 
     if (user && (await user.matchPassword(password))) {
-      res.json({
+      // Create a clean user payload WITHOUT the password hash
+      const userPayload = {
         _id: user._id,
+        id: user._id,
         username: user.username,
         email: user.email,
         isAdmin: user.isAdmin,
+        profilePicture: user.profilePicture,
+      };
+      
+      res.json({
         token: generateToken(user._id),
+        user: userPayload,
       });
+
     } else {
-      res.status(401).json({ message: "Invalid credentials" });
+      res.status(401).json({ message: "Invalid email or password" });
     }
   } catch (error) {
-    logger.error(`Login error: ${error.message}`);
-    res.status(500).json({ message: "Server error" });
+    console.error(`Login error: ${error.message}`);
+    res.status(500).json({ message: "Server error during login." });
   }
 };
-
-// GET A USER'S PUBLIC PROFILE (NEW)
+// GET A USER'S PUBLIC PROFILE
 const getPublicProfile = async (req, res) => {
   try {
     const user = await User.findOne({ username: req.params.username }).select(
       "-password -email"
-    ); // Exclude private info
+    );
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    // You might also want to send back the user's recent comments or liked articles
     res.json(user);
   } catch (error) {
     logger.error(`Error getting public profile: ${error.message}`);
@@ -92,7 +103,7 @@ const getPublicProfile = async (req, res) => {
   }
 };
 
-// GET CURRENT USER'S PROFILE (MODIFIED FOR CLARITY)
+// GET CURRENT USER'S PROFILE
 const getMyProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("-password");
@@ -106,7 +117,7 @@ const getMyProfile = async (req, res) => {
   }
 };
 
-// UPDATE USER PROFILE (NEW)
+// UPDATE USER PROFILE
 const updateUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -136,7 +147,6 @@ const updateUserProfile = async (req, res) => {
         email: updatedUser.email,
         profilePicture: updatedUser.profilePicture,
         bio: updatedUser.bio,
-        // ... send back other updated info as needed
       });
     } else {
       res.status(404).json({ message: "User not found" });
@@ -146,6 +156,7 @@ const updateUserProfile = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 const getUserComments = async (req, res) => {
   try {
     const user = await User.findOne({ username: req.params.username });
@@ -153,11 +164,10 @@ const getUserComments = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Now that 'Comment' is imported, this line will work correctly.
     const comments = await Comment.find({ user: user._id })
       .populate({
         path: 'news',
-        select: 'title _id' // Also select the ID for linking
+        select: 'title _id'
       })
       .sort({ createdAt: -1 })
       .limit(20);
@@ -168,6 +178,7 @@ const getUserComments = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 const getUserLikedComments = async (req, res) => {
   try {
     const user = await User.findOne({ username: req.params.username });
@@ -175,13 +186,12 @@ const getUserLikedComments = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Find all comments where the 'likes' array contains this user's ID
     const likedComments = await Comment.find({ likes: user._id })
       .populate({
         path: 'news',
         select: 'title _id'
       })
-      .populate({ // Also populate the original author of the liked comment
+      .populate({
         path: 'user',
         select: 'username profilePicture'
       })
@@ -195,14 +205,106 @@ const getUserLikedComments = async (req, res) => {
   }
 };
 
+// FORGOT PASSWORD: Generate token and send email
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
 
-// EXPORT all functions
+    if (!user) {
+      // Send a generic success message even if user not found to prevent email enumeration
+      return res.status(200).json({ message: 'If a user with that email exists, a password reset link has been sent.' });
+    }
+
+    // Generate a random token
+    const resetToken = crypto.randomBytes(20).toString('hex');
+
+    // Set token and expiration on user document (e.g., expires in 1 hour)
+    user.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    user.passwordResetExpires = Date.now() + 3600000; // 1 hour
+
+    await user.save();
+
+    // Create the reset URL for the email
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
+    const mailOptions = {
+      from: '"AI NewsBuzz Support" <support@ainewsbuzz.com>',
+      to: user.email,
+      subject: 'Password Reset Request',
+      text: `You are receiving this email because you (or someone else) have requested a password reset. Please click the following link, or paste it into your browser to complete the process: \n\n${resetUrl}\n\nIf you did not request this, please ignore this email and your password will remain unchanged.`,
+      html: `<p>You are receiving this email because you (or someone else) have requested a password reset. Please click the following link to complete the process:</p>
+             <p><a href="${resetUrl}">Reset Password</a></p>
+             <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>`
+    };
+
+    await transporter.sendMail(mailOptions);
+    
+    res.status(200).json({ message: 'If a user with that email exists, a password reset link has been sent.' });
+
+  } catch (error) {
+    logger.error(`FORGOT_PASSWORD_ERROR: ${error.message}`);
+    res.status(500).json({ message: 'An error occurred. Please try again later.' });
+  }
+};
+
+// VALIDATE RESET TOKEN: Check if the token is valid before showing the reset form
+const validateResetToken = async (req, res) => {
+  try {
+    const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+
+    const user = await User.findOne({
+      passwordResetToken: hashedToken,
+      passwordResetExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Password reset token is invalid or has expired.' });
+    }
+
+    res.status(200).json({ message: 'Token is valid.' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error.' });
+  }
+};
+
+// RESET PASSWORD: Update the user's password
+const resetPassword = async (req, res) => {
+  try {
+    const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+
+    const user = await User.findOne({
+      passwordResetToken: hashedToken,
+      passwordResetExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Password reset token is invalid or has expired.' });
+    }
+
+    // Set the new password
+    user.password = req.body.password;
+    // Clear the reset token fields
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+
+    await user.save();
+
+    res.status(200).json({ message: 'Password has been updated successfully.' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error.' });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getMyProfile,
   updateUserProfile,
   getPublicProfile,
-   getUserComments,
-   getUserLikedComments,
+  getUserComments,
+  getUserLikedComments,
+  forgotPassword,
+  validateResetToken,
+  resetPassword
 };

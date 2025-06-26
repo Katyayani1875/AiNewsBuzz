@@ -17,7 +17,8 @@ const userSchema = new mongoose.Schema(
     bio: { type: String, maxlength: 160, default: "" },
     location: { type: String, maxlength: 50, default: "" },
     website: { type: String, maxlength: 100, default: "" },
-
+    passwordResetToken: String,
+    passwordResetExpires: Date,
     // Existing fields
     followedTopics: [{ type: mongoose.Schema.Types.ObjectId, ref: "Channel" }], // Reference to Channel model
   },

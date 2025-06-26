@@ -1,129 +1,150 @@
-// src/controllers/summaryController.js
-
-// **** CORRECTED IMPORT PATHS ****
-const { summarizeText } = require("../services/cohereService");
-const {
-  generateELI5,
-  generateBulletPoints,
-  analyzeSentimentWithGemini,
-} = require("../services/geminiService"); // Assuming you added sentiment analysis here
+// src/controllers/summaryController.js (Definitive Version)
 const News = require("../models/News");
 const Summary = require("../models/Summary");
 const logger = require("../utils/logger");
+const { generateAllInsights } = require("../services/geminiService");
 
-const createSummariesForNews = async (newsItemId) => {
-  // This log is already working, which is good.
-  console.log(
-    `--- [START] Processing summaries for News ID: ${newsItemId} ---`
-  );
-
-  try {
-    const newsItem = await News.findById(newsItemId);
-    if (!newsItem || !newsItem.content) {
-      logger.warn(
-        `News item not found or missing content for ID: ${newsItemId}`
-      );
-      return;
-    }
-
-    // Log the content being sent to the APIs for verification
-    // console.log(`Article Content to Summarize: "${newsItem.content.substring(0, 100)}..."`);
-
-    const articleText = newsItem.content;
-
-    // --- LOGGING STEP 1: Test Cohere ---
-    const tldrSummary = await summarizeText(articleText); // Corrected from cohereSummarize
-    console.log(`[DEBUG] Cohere TLDR Result for ${newsItemId}:`, tldrSummary); // <-- ADDED LOG
-
-    let sentiment = null;
-    if (tldrSummary) {
-      // --- LOGGING STEP 2: Test Gemini Sentiment ---
-      sentiment = await analyzeSentimentWithGemini(tldrSummary);
-      console.log(
-        `[DEBUG] Gemini Sentiment Result for ${newsItemId}:`,
-        sentiment
-      ); // <-- ADDED LOG
-    }
-
-    // --- LOGGING STEP 3: Test Gemini Bullets ---
-    const bulletSummary = await generateBulletPoints(articleText);
-    console.log(
-      `[DEBUG] Gemini Bullets Result for ${newsItemId}:`,
-      bulletSummary
-    ); // <-- ADDED LOG
-
-    // --- LOGGING STEP 4: Test Gemini ELI5 ---
-    const eli5Summary = await generateELI5(articleText);
-    console.log(`[DEBUG] Gemini ELI5 Result for ${newsItemId}:`, eli5Summary); // <-- ADDED LOG
-
-    // Store summaries
-    if (tldrSummary) {
-      await createSummary(newsItemId, "tldr", tldrSummary, sentiment);
-    }
-    if (bulletSummary) {
-      await createSummary(newsItemId, "bullets", bulletSummary);
-    }
-    if (eli5Summary) {
-      await createSummary(newsItemId, "eli5", eli5Summary);
-    }
-
-    console.log(`--- [END] Finished processing for News ID: ${newsItemId} ---`);
-  } catch (error) {
-    logger.error(
-      `Error in createSummariesForNews for ID ${newsItemId}: ${error.message}`
-    );
-  }
-};
-
-// The createSummary function remains the same, but no longer needs the generateAudio call
-const createSummary = async (
-  newsId,
-  type,
-  content,
-  sentiment = null,
-  language = "en"
-) => {
-  try {
-    const summary = new Summary({
-      news: newsId,
-      type: type,
-      content: content,
-      sentiment: sentiment,
-      language: language,
+// Internal helper function for creating and saving summaries
+const createSummary = async (newsId, type, content, sentiment = null) => {
+    const summary = new Summary({ 
+        news: newsId, 
+        type, 
+        content, 
+        ...(sentiment && { sentiment }) 
     });
-
-    const savedSummary = await summary.save();
-    await News.findByIdAndUpdate(
-      newsId,
-      { $push: { summaries: savedSummary._id } },
-      { new: true }
-    );
-
-    console.log(
-      `✅ SUCCESS: Saved '${type}' summary to DB for News ID: ${newsId}`
-    );
-    logger.info(`Summary of type ${type} created for news item ${newsId}`);
-  } catch (error) {
-    console.error(
-      `❌ ERROR: Failed to save '${type}' summary to DB for News ID: ${newsId}`,
-      error
-    );
-    logger.error(`Error creating summary in DB: ${error.message}`);
-  }
+    await summary.save();
+    await News.findByIdAndUpdate(newsId, { 
+        $push: { summaries: summary._id },
+        $set: { lastProcessedAt: new Date() } // Track processing time
+    });
+    return summary;
 };
 
-const getSummariesForNews = async (req, res) => {
-  try {
-    const newsId = req.params.newsId;
-    const newsItem = await News.findById(newsId).populate("summaries");
-    if (!newsItem) {
-      return res.status(404).json({ message: "News item not found" });
+/**
+ * Main processing logic for article AI analysis
+ * @param {string} articleId - MongoDB article ID
+ * @param {boolean} forceRefresh - Whether to reprocess even if already processed
+ */
+const processArticleAI = async (articleId, forceRefresh = false) => {
+    try {
+        const newsItem = await News.findById(articleId);
+        if (!newsItem) {
+            logger.warn(`[AI-PROCESS] Article ${articleId} not found`);
+            return { success: false, message: "Article not found" };
+        }
+
+        // Skip if already processed unless forced
+        if (newsItem.isProcessed && !forceRefresh) {
+            logger.info(`[AI-PROCESS] Article ${articleId} already processed, skipping`);
+            return { success: true, skipped: true };
+        }
+
+        logger.info(`[AI-PROCESS] Starting AI analysis for: ${newsItem.title.substring(0, 50)}...`);
+
+        // Get all insights in single API call
+        const insights = await generateAllInsights(
+            newsItem.title,
+            newsItem.content,
+            newsItem.source?.name || "Unknown source"
+        );
+
+        if (!insights) {
+            throw new Error("No insights generated");
+        }
+
+        // Update news item with insights
+        const updates = {
+            topic: insights.category?.toLowerCase() || newsItem.topic,
+            isProcessed: true,
+            ...(insights.reliability && { reliability: insights.reliability })
+        };
+
+        // Create summaries in parallel
+        const summaryPromises = [];
+        if (insights.tldr) {
+            summaryPromises.push(
+                createSummary(newsItem._id, "tldr", insights.tldr, insights.sentiment)
+            );
+        }
+        if (insights.bullets) {
+            summaryPromises.push(
+                createSummary(newsItem._id, "bullets", insights.bullets)
+            );
+        }
+        if (insights.eli5) {
+            summaryPromises.push(
+                createSummary(newsItem._id, "eli5", insights.eli5)
+            );
+        }
+
+        await Promise.all([
+            News.findByIdAndUpdate(articleId, updates),
+            ...summaryPromises
+        ]);
+
+        logger.info(`[AI-PROCESS] Completed AI analysis for: ${articleId}`);
+        return { success: true, summaries: summaryPromises.length };
+    } catch (error) {
+        logger.error(`[AI-PROCESS] Failed for ${articleId}: ${error.message}`);
+        await News.findByIdAndUpdate(articleId, { 
+            processingError: error.message.substring(0, 200) 
+        });
+        return { success: false, error: error.message };
     }
-    res.json(newsItem.summaries);
-  } catch (error) {
-    logger.error(`Error fetching summaries: ${error.message}`);
-    res.status(500).json({ message: "Server error" });
-  }
 };
 
-module.exports = { createSummariesForNews, getSummariesForNews };
+/**
+ * API endpoint controller for generating and fetching summaries
+ */
+const generateAndGetSummaries = async (req, res) => {
+    const { newsId } = req.params;
+    const { refresh = false } = req.query;
+
+    try {
+        const newsItem = await News.findById(newsId);
+        if (!newsItem) {
+            return res.status(404).json({ 
+                success: false,
+                message: "Article not found" 
+            });
+        }
+
+        // Process if no summaries exist or refresh requested
+        if (newsItem.summaries.length === 0 || refresh) {
+            const processResult = await processArticleAI(newsId, refresh);
+            if (!processResult.success) {
+                return res.status(500).json({ 
+                    success: false,
+                    message: processResult.error || "Failed to generate summaries"
+                });
+            }
+        }
+
+        // Return complete article data with populated summaries
+        const result = await News.findById(newsId)
+            .populate("summaries")
+            .select("-content -__v"); // Exclude large/unnecessary fields
+
+        res.json({
+            success: true,
+            data: {
+                summaries: result.summaries,
+                reliability: result.reliability,
+                topic: result.topic,
+                lastProcessedAt: result.lastProcessedAt
+            }
+        });
+
+    } catch (error) {
+        logger.error(`[API] Summary generation failed for ${newsId}: ${error.message}`);
+        res.status(500).json({ 
+            success: false,
+            message: "Internal server error during summary generation"
+        });
+    }
+};
+
+module.exports = {
+    processArticleAI,
+    generateAndGetSummaries
+};
