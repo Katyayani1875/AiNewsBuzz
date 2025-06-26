@@ -1,10 +1,9 @@
 // src/components/layout/Navbar.jsx
-
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth.store';
 import { 
   Sun, Moon, RefreshCw, CloudOff, Thermometer, Droplets, Wind, MapPin, Star, Cloud, Snowflake,
-  Globe, Zap, Rss, User, LogOut, LayoutGrid
+  Globe, Zap, Rss, User, LogOut, LayoutGrid, Newspaper, Info
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -199,20 +198,48 @@ const getWeatherVisuals = (weather) => {
 };
 
 const WeatherWidget = () => {
-  const [weather, setWeather] = useState(null); const [loading, setLoading] = useState(true); const [error, setError] = useState(null); const [isRefreshing, setIsRefreshing] = useState(false); const [locationSource, setLocationSource] = useState(null); const [isHovered, setIsHovered] = useState(false);
+  const [weather, setWeather] = useState(null); 
+  const [loading, setLoading] = useState(true); 
+  const [error, setError] = useState(null); 
+  const [isRefreshing, setIsRefreshing] = useState(false); 
+  const [locationSource, setLocationSource] = useState(null); 
+  const [isHovered, setIsHovered] = useState(false);
   
   useEffect(() => {
     const fetchWeather = async (isManualRefresh = false) => {
-      if (!isManualRefresh) setLoading(true); setError(null);
+      if (!isManualRefresh) setLoading(true); 
+      setError(null);
       try {
-        const apiKey = import.meta.env.VITE_WEATHERAPI_KEY; if (!apiKey) throw new Error("WeatherAPI key not configured");
+        const apiKey = import.meta.env.VITE_WEATHERAPI_KEY; 
+        if (!apiKey) throw new Error("WeatherAPI key not configured");
         const locationQuery = await new Promise((resolve) => {
-          if (!navigator.geolocation) { setLocationSource('ip'); resolve('auto:ip'); return; }
-          navigator.geolocation.getCurrentPosition( (pos) => { setLocationSource('precise'); resolve(`${pos.coords.latitude},${pos.coords.longitude}`); }, () => { setLocationSource('ip'); resolve('auto:ip'); }, { timeout: 5000 });
+          if (!navigator.geolocation) { 
+            setLocationSource('ip'); 
+            resolve('auto:ip'); 
+            return; 
+          }
+          navigator.geolocation.getCurrentPosition(
+            (pos) => { 
+              setLocationSource('precise'); 
+              resolve(`${pos.coords.latitude},${pos.coords.longitude}`); 
+            }, 
+            () => { 
+              setLocationSource('ip'); 
+              resolve('auto:ip'); 
+            }, 
+            { timeout: 5000 }
+          );
         });
-        const response = await fetch(`https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${locationQuery}`); if (!response.ok) throw new Error(`WeatherAPI error: ${response.status}`);
-        const data = await response.json(); setWeather(data);
-      } catch (err) { console.error("Weather fetch error:", err); setError(err.message); } finally { if (!isManualRefresh) setLoading(false); }
+        const response = await fetch(`https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${locationQuery}`); 
+        if (!response.ok) throw new Error(`WeatherAPI error: ${response.status}`);
+        const data = await response.json(); 
+        setWeather(data);
+      } catch (err) { 
+        console.error("Weather fetch error:", err); 
+        setError(err.message); 
+      } finally { 
+        if (!isManualRefresh) setLoading(false); 
+      }
     };
 
     fetchWeather();
@@ -220,14 +247,32 @@ const WeatherWidget = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleRefreshClick = (e) => { e.stopPropagation(); if (isRefreshing) return; setIsRefreshing(true); fetchWeather(true).finally(() => setIsRefreshing(false)); };
+  const handleRefreshClick = (e) => { 
+    e.stopPropagation(); 
+    if (isRefreshing) return; 
+    setIsRefreshing(true); 
+    fetchWeather(true).finally(() => setIsRefreshing(false)); 
+  };
 
   const { background, VisualComponent } = getWeatherVisuals(weather);
   if (loading && !weather) return <div className="h-10 w-24 bg-secondary/50 rounded-full animate-pulse" />;
-  if (error) return (<button className="flex items-center gap-2 px-3 py-1.5 h-10 rounded-full text-sm text-destructive cursor-pointer bg-destructive/10 hover:bg-destructive/20 transition-colors" onClick={() => fetchWeather()} title="Weather unavailable. Click to retry."><CloudOff size={16} /><span>Retry</span></button>);
+  if (error) return (
+    <button 
+      className="flex items-center gap-2 px-3 py-1.5 h-10 rounded-full text-sm text-destructive cursor-pointer bg-destructive/10 hover:bg-destructive/20 transition-colors" 
+      onClick={() => fetchWeather()} 
+      title="Weather unavailable. Click to retry."
+    >
+      <CloudOff size={16} />
+      <span>Retry</span>
+    </button>
+  );
   if (!weather?.current) return null;
   
-  const LocationIndicator = () => { if (locationSource === 'precise') return <MapPin size={12} className="text-blue-300" title="Using precise location" />; if (locationSource === 'ip') return <Globe size={12} className="text-yellow-300" title="Using approximate location (IP-based)" />; return null; };
+  const LocationIndicator = () => { 
+    if (locationSource === 'precise') return <MapPin size={12} className="text-blue-300" title="Using precise location" />; 
+    if (locationSource === 'ip') return <Globe size={12} className="text-yellow-300" title="Using approximate location (IP-based)" />; 
+    return null; 
+  };
 
   const popoverVariants = {
     hidden: { opacity: 0, scale: 0.95, y: -10 },
@@ -237,34 +282,67 @@ const WeatherWidget = () => {
   
   return (
     <div className="relative" onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
-      <motion.div className={`relative flex items-center justify-center gap-1.5 cursor-pointer h-10 w-24 rounded-full overflow-hidden text-white shadow-lg`} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+      <motion.div 
+        className={`relative flex items-center justify-center gap-1.5 cursor-pointer h-10 w-24 rounded-full overflow-hidden text-white shadow-lg`} 
+        whileHover={{ scale: 1.05 }} 
+        whileTap={{ scale: 0.95 }}
+      >
         <div className={`absolute inset-0 transition-all duration-500 ${background}`} />
         {VisualComponent && <VisualComponent />}
         <div className="relative z-10 flex items-center" style={{textShadow: '0 2px 4px rgba(0,0,0,0.5)'}}>
-          <div className="w-8 h-8 -ml-1"><DynamicWeatherIcon code={weather.current.condition.code} isDay={weather.current.is_day} /></div>
+          <div className="w-8 h-8 -ml-1">
+            <DynamicWeatherIcon code={weather.current.condition.code} isDay={weather.current.is_day} />
+          </div>
           <span className="text-lg font-bold">{Math.round(weather.current.temp_c)}°</span>
         </div>
       </motion.div>
 
       <AnimatePresence>
         {isHovered && (
-          <motion.div variants={popoverVariants} initial="hidden" animate="visible" exit="exit" className="absolute top-full right-0 mt-2 w-64 origin-top-right z-50">
+          <motion.div 
+            variants={popoverVariants} 
+            initial="hidden" 
+            animate="visible" 
+            exit="exit" 
+            className="absolute top-full right-0 mt-2 w-64 origin-top-right z-50"
+          >
             <div className="bg-popover/70 dark:bg-popover/80 backdrop-blur-lg text-popover-foreground rounded-xl border border-border/20 shadow-2xl overflow-hidden">
               <div className="flex justify-between items-start p-4">
                 <div className="flex-1">
-                  <div className="flex items-center gap-1.5"><p className="font-bold text-foreground truncate">{weather.location.name}</p><LocationIndicator /></div>
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-bold text-foreground truncate">{weather.location.name}</p>
+                    <LocationIndicator />
+                  </div>
                   <p className="text-sm text-muted-foreground">{weather.current.condition.text}</p>
                 </div>
-                <div className="w-14 h-14 -mt-2 -mr-2 flex-shrink-0"><DynamicWeatherIcon code={weather.current.condition.code} isDay={weather.current.is_day} /></div>
+                <div className="w-14 h-14 -mt-2 -mr-2 flex-shrink-0">
+                  <DynamicWeatherIcon code={weather.current.condition.code} isDay={weather.current.is_day} />
+                </div>
               </div>
               <div className="h-px bg-border/20" />
               <div className="p-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                <div className="flex items-center gap-2 text-muted-foreground"><Thermometer size={16}/><span className="font-medium">Feels Like</span></div><span className="font-semibold text-foreground text-right">{Math.round(weather.current.feelslike_c)}°C</span>
-                <div className="flex items-center gap-2 text-muted-foreground"><Droplets size={16}/><span className="font-medium">Humidity</span></div><span className="font-semibold text-foreground text-right">{weather.current.humidity}%</span>
-                <div className="flex items-center gap-2 text-muted-foreground"><Wind size={16}/><span className="font-medium">Wind</span></div><span className="font-semibold text-foreground text-right">{weather.current.wind_kph} km/h</span>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Thermometer size={16}/>
+                  <span className="font-medium">Feels Like</span>
+                </div>
+                <span className="font-semibold text-foreground text-right">{Math.round(weather.current.feelslike_c)}°C</span>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Droplets size={16}/>
+                  <span className="font-medium">Humidity</span>
+                </div>
+                <span className="font-semibold text-foreground text-right">{weather.current.humidity}%</span>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Wind size={16}/>
+                  <span className="font-medium">Wind</span>
+                </div>
+                <span className="font-semibold text-foreground text-right">{weather.current.wind_kph} km/h</span>
               </div>
               <div className="h-px bg-border/20" />
-              <button onClick={handleRefreshClick} disabled={isRefreshing} className="w-full text-xs text-muted-foreground flex items-center justify-center gap-1.5 p-2.5 hover:bg-accent/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              <button 
+                onClick={handleRefreshClick} 
+                disabled={isRefreshing} 
+                className="w-full text-xs text-muted-foreground flex items-center justify-center gap-1.5 p-2.5 hover:bg-accent/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 <RefreshCw size={12} className={isRefreshing ? 'animate-spin' : ''} />
                 {isRefreshing ? 'Updating...' : `Updated: ${new Date(weather.current.last_updated_epoch * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`}
               </button>
@@ -286,9 +364,21 @@ const ThemeToggle = () => {
   const toggleTheme = () => setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
 
   return (
-    <motion.button onClick={toggleTheme} className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors flex items-center justify-center w-10 h-10" aria-label="Toggle theme" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+    <motion.button 
+      onClick={toggleTheme} 
+      className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors flex items-center justify-center w-10 h-10" 
+      aria-label="Toggle theme" 
+      whileHover={{ scale: 1.1 }} 
+      whileTap={{ scale: 0.9 }}
+    >
       <AnimatePresence mode="wait" initial={false}>
-        <motion.div key={theme} initial={{ y: -20, opacity: 0, rotate: -90 }} animate={{ y: 0, opacity: 1, rotate: 0 }} exit={{ y: 20, opacity: 0, rotate: 90 }} transition={{ duration: 0.3, ease: "easeInOut" }}>
+        <motion.div 
+          key={theme} 
+          initial={{ y: -20, opacity: 0, rotate: -90 }} 
+          animate={{ y: 0, opacity: 1, rotate: 0 }} 
+          exit={{ y: 20, opacity: 0, rotate: 90 }} 
+          transition={{ duration: 0.3, ease: "easeInOut" }}
+        >
           {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
         </motion.div>
       </AnimatePresence>
@@ -300,10 +390,77 @@ const UserAvatar = ({ user }) => {
   if (!user || !user.username) return <div className="w-10 h-10 rounded-full bg-secondary" />;
   const imageUrl = user.profilePicture?.url || null;
   const [isImageBroken, setImageBroken] = useState(false);
-  if (imageUrl && !isImageBroken) return <img src={imageUrl} alt={user.username} className="w-10 h-10 rounded-full object-cover" onError={() => setImageBroken(true)} />;
-  const getInitials = (name = '') => { const words = name.trim().split(' ').filter(Boolean); if (words.length > 1) return (words[0][0] + words[words.length - 1][0]).toUpperCase(); return name.substring(0, 2).toUpperCase(); };
-  return <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-base" title={user.username}>{getInitials(user.username)}</div>;
+  
+  if (imageUrl && !isImageBroken) {
+    return (
+      <img 
+        src={imageUrl} 
+        alt={user.username} 
+        className="w-10 h-10 rounded-full object-cover" 
+        onError={() => setImageBroken(true)} 
+      />
+    );
+  }
+  
+  const getInitials = (name = '') => {
+    const words = name.trim().split(' ').filter(Boolean);
+    if (words.length > 1) return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+    return name.substring(0, 2).toUpperCase();
+  };
+  
+  return (
+    <div 
+      className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-base" 
+      title={user.username}
+    >
+      {getInitials(user.username)}
+    </div>
+  );
 };
+
+const UserMenu = ({ user, onLogout, navigate }) => (
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <button className="focus:outline-none rounded-full ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2">
+        <UserAvatar user={user} />
+      </button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent className="w-56 bg-popover/80 backdrop-blur-md border-border/20" align="end">
+      <DropdownMenuLabel className="font-normal">
+        <div className="flex flex-col space-y-1">
+          <p className="text-sm font-medium leading-none">Hi, {user.username}</p>
+          <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+        </div>
+      </DropdownMenuLabel>
+      <DropdownMenuSeparator className="bg-border/20" />
+      <DropdownMenuItem onSelect={() => navigate('/news')} className="cursor-pointer">
+        <LayoutGrid className="mr-2 h-4 w-4" />
+        <span>Dashboard</span>
+      </DropdownMenuItem>
+      <DropdownMenuItem onSelect={() => navigate(`/news/user/${user.username}`)} className="cursor-pointer">
+        <User className="mr-2 h-4 w-4" />
+        <span>Profile</span>
+      </DropdownMenuItem>
+      <DropdownMenuSeparator className="bg-border/20" />
+      <DropdownMenuItem onSelect={onLogout} className="cursor-pointer text-red-500 focus:text-white focus:bg-destructive">
+        <LogOut className="mr-2 h-4 w-4" />
+        <span>Logout</span>
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  </DropdownMenu>
+);
+
+const AuthButtons = () => (
+  <div className="hidden sm:flex items-center gap-2">
+    <Link to="/login" className="text-muted-foreground hover:text-foreground font-semibold transition-colors py-2 px-4 rounded-md text-sm">
+      Login
+    </Link>
+    <Link to="/register" className="relative inline-flex items-center justify-center rounded-md px-5 py-2.5 overflow-hidden font-medium text-sm text-indigo-50 group bg-gradient-to-br from-purple-600 to-indigo-500 hover:text-white">
+      <span className="absolute w-0 h-0 transition-all duration-300 ease-out bg-white rounded-full group-hover:w-32 group-hover:h-32 opacity-10"></span>
+      <span className="relative">Sign Up</span>
+    </Link>
+  </div>
+);
 
 export const Navbar = () => {
   const { user, token, logout } = useAuthStore();
@@ -314,6 +471,11 @@ export const Navbar = () => {
     logout();
     navigate('/');
   };
+
+  const navLinkClass = ({ isActive }) => 
+    `relative px-3 py-2 text-sm font-medium transition-colors hover:text-primary ${
+      isActive ? 'text-primary' : 'text-muted-foreground'
+    }`;
 
   return (
     <header className="bg-background/80 backdrop-blur-xl border-b border-border/80 sticky top-0 z-50">
@@ -327,11 +489,37 @@ export const Navbar = () => {
             </span>
           </Link>
           <nav className="hidden md:flex items-center gap-2">
-            <NavLink to="/news" className={({ isActive }) => `flex items-center gap-2 text-sm font-semibold transition-colors px-3 py-2 rounded-md ${ isActive ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-accent' }`}>
-              News
+            <NavLink to="/news" className={navLinkClass}>
+              {({ isActive }) => (
+                <>
+                  <span className="flex items-center gap-1">
+                    <Newspaper size={16} className="shrink-0" />
+                    News
+                  </span>
+                  {isActive && (
+                    <motion.div 
+                      className="absolute bottom-1 left-3 right-3 h-[2px] bg-primary rounded-full" 
+                      layoutId="active-nav-underline" 
+                    />
+                  )}
+                </>
+              )}
             </NavLink>
-            <NavLink to="/about" className={({ isActive }) => `flex items-center gap-2 text-sm font-semibold transition-colors px-3 py-2 rounded-md ${ isActive ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-accent' }`}>
-              About
+            <NavLink to="/about" className={navLinkClass}>
+              {({ isActive }) => (
+                <>
+                  <span className="flex items-center gap-1">
+                    <Info size={16} className="shrink-0" />
+                    About
+                  </span>
+                  {isActive && (
+                    <motion.div 
+                      className="absolute bottom-1 left-3 right-3 h-[2px] bg-primary rounded-full" 
+                      layoutId="active-nav-underline" 
+                    />
+                  )}
+                </>
+              )}
             </NavLink>
           </nav>
         </div>
@@ -341,48 +529,12 @@ export const Navbar = () => {
           <ThemeToggle />
           
           {isLoggedIn && user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="focus:outline-none rounded-full ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2">
-                  <UserAvatar user={user} />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56 bg-popover/80 backdrop-blur-md border-border/20" align="end">
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">Hi, {user.username}</p>
-                    <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-border/20" />
-                <DropdownMenuItem onSelect={() => navigate('/news')} className="cursor-pointer">
-                  <LayoutGrid className="mr-2 h-4 w-4" />
-                  <span>Dashboard</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => navigate(`/news/user/${user.username}`)} className="cursor-pointer">
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-border/20" />
-                <DropdownMenuItem onSelect={handleLogout} className="cursor-pointer text-red-500 focus:text-white focus:bg-destructive">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Logout</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <UserMenu user={user} onLogout={handleLogout} navigate={navigate} />
           ) : (
-            <div className="hidden sm:flex items-center gap-2">
-              <Link to="/login" className="text-muted-foreground hover:text-foreground font-semibold transition-colors py-2 px-4 rounded-md text-sm">
-                Login
-              </Link>
-              <Link to="/register" className="relative inline-flex items-center justify-center rounded-md px-5 py-2.5 overflow-hidden font-medium text-sm text-indigo-50 group bg-gradient-to-br from-purple-600 to-indigo-500 hover:text-white">
-                <span className="absolute w-0 h-0 transition-all duration-300 ease-out bg-white rounded-full group-hover:w-32 group-hover:h-32 opacity-10"></span>
-                <span className="relative">Sign Up</span>
-              </Link>
-            </div>
+            <AuthButtons />
           )}
         </div>
       </div>
     </header>
   );
-}; 
+};
