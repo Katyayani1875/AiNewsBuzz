@@ -31,7 +31,12 @@ connectDB();
 
 // --- SOCKET.IO SETUP AND EVENT HANDLING ---
 const io = new Server(server, {
-  cors: corsOptions, // Reuse the same robust CORS options
+ cors: {
+    // This MUST be the URL of your deployed Vercel frontend
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    methods: ["GET", "POST"],
+    credentials: true // This is the crucial line that fixes the CORS error
+  },
 });
 
 // This makes the 'io' instance available to your controllers via req.app.get('io')

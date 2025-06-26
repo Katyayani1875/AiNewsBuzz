@@ -8,8 +8,9 @@ import { Footer } from './Footer';
 import io from 'socket.io-client';
 import { Toaster, toast } from 'react-hot-toast';
 
-const socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000');
-
+const socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', {
+    withCredentials: true // This is important for authenticated connections
+});
 export const Layout = () => {
   const { user } = useAuthStore();
   const { addNotification } = useNotificationStore();
