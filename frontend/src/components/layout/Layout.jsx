@@ -5,11 +5,15 @@ import { Navbar } from './Navbar';
 import { useAuthStore } from '../../store/auth.store';
 import { useNotificationStore } from '../../store/notification.store';
 import { Footer } from './Footer';
-import io from 'socket.io-client';
+import { io } from "socket.io-client";
 import { Toaster, toast } from 'react-hot-toast';
 
-const socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', {
-    withCredentials: true // This is important for authenticated connections
+const URL = import.meta.env.VITE_API_URL;
+const socket = io(URL, {
+    withCredentials: true, 
+    auth: {
+        token: localStorage.getItem("token") // Or however you store your JWT
+    }
 });
 export const Layout = () => {
   const { user } = useAuthStore();
