@@ -1,4 +1,5 @@
 // src/server.js 
+console.log("--- DEPLOYMENT v3: server.js IS RUNNING THE LATEST VERSION ---");
 require("dotenv").config();
 require("./models/User");
 require("./models/News");
