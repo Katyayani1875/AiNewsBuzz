@@ -1,10 +1,10 @@
-// backend/src/app.js (DEFINITIVE, SELF-CONTAINED, AND CORRECTED)
+// backend/src/app.js (FINAL, BULLETPROOF VERSION)
 
 const express = require("express");
 const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
-const jwt = require('jsonwebtoken'); // You'll need this for authenticating sockets
+const jwt = require('jsonwebtoken');
 const connectDB = require("./config/db");
 const routes = require("./routes");
 const { errorHandler } = require("./middlewares/errorMiddleware");
@@ -13,33 +13,46 @@ const logger = require("./utils/logger");
 const app = express();
 const server = http.createServer(app);
 
-// --- CORS CONFIGURATION ---
-// This is the single source of truth for CORS settings for both Express and Socket.IO
+// --- START OF FIX: CREATE AN EXPLICIT WHITELIST ---
+// This list contains all the URLs that are allowed to make requests to your backend.
+const allowedOrigins = [
+  'https://ai-news-buzz.vercel.app', // Your Vercel production URL
+  'http://localhost:5173',          // Your local development URL
+];
+// --- END OF FIX ---
+
+
+// --- CORS CONFIGURATION (UPDATED) ---
+// We now use a function for the origin to check against our whitelist.
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  origin: function (origin, callback) {
+    // For requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
   methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true, // This is essential for allowing cookies and auth headers
+  credentials: true, // This is essential
 };
 
 // --- MIDDLEWARE SETUP ---
 app.use(cors(corsOptions));
-app.use(express.json()); // Parses incoming JSON payloads
-app.use(express.urlencoded({ extended: true })); // Parses URL-encoded payloads
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // --- DATABASE CONNECTION ---
 connectDB();
 
-// --- SOCKET.IO SETUP AND EVENT HANDLING ---
+// --- SOCKET.IO SETUP AND EVENT HANDLING (UPDATED) ---
+// The Socket.IO server MUST use the same CORS settings.
 const io = new Server(server, {
- cors: {
-    // This MUST be the URL of your deployed Vercel frontend
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
-    methods: ["GET", "POST"],
-    credentials: true // This is the crucial line that fixes the CORS error
-  },
+  cors: corsOptions, // Use the same updated corsOptions object
 });
 
-// This makes the 'io' instance available to your controllers via req.app.get('io')
 app.set("io", io);
 
 // Middleware to authenticate socket connections
@@ -48,14 +61,13 @@ io.use((socket, next) => {
     if (token) {
         jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
             if (err) {
-                // Don't reject the connection, just don't attach the user
                 return next(); 
             }
-            socket.user = decoded; // Attach user payload { id: '...' }
+            socket.user = decoded;
             next();
         });
     } else {
-        next(); // Allow connection even without a token
+        next();
     }
 });
 
@@ -63,19 +75,16 @@ io.use((socket, next) => {
 io.on("connection", (socket) => {
     logger.info(`A user connected: ${socket.id}`);
 
-    // If the user is authenticated, have them join a private room
     if (socket.user) {
         socket.join(socket.user.id);
         logger.info(`User ${socket.user.id} joined their private room.`);
     }
 
-    // Handler for joining article-specific rooms
     socket.on('join_article_room', (articleId) => {
         socket.join(articleId);
         logger.info(`Socket ${socket.id} joined article room: ${articleId}`);
     });
 
-    // Handler for leaving article-specific rooms
     socket.on('leave_article_room', (articleId) => {
         socket.leave(articleId);
         logger.info(`Socket ${socket.id} left article room: ${articleId}`);
@@ -86,14 +95,11 @@ io.on("connection", (socket) => {
     });
 });
 
-
 // --- API ROUTES ---
-// This must come after the main middleware setup
 app.use("/api", routes);
 
 // --- ERROR HANDLING MIDDLEWARE ---
-// This must come after the routes
 app.use(errorHandler);
 
 // --- EXPORT THE APP AND SERVER ---
-module.exports = { app, server };   
+module.exports = { app, server };
