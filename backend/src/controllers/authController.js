@@ -15,67 +15,77 @@ const generateToken = (id) => {
   });
 };
 
-// Register a new user
 const registerUser = async (req, res) => {
+   console.log("--- Backend Controller: Received a request to /auth/register ---");
+  console.log("Request Body:", req.body);
   const { username, email, password } = req.body;
-
   try {
     if (!username || !email || !password) {
-      return res.status(400).json({ message: "Please enter all fields" });
+      console.error("--- Backend Validation FAILED: One or more fields are missing ---");
+      console.error("Received values:", { username, email, password });
+      return res.status(400).json({ message: "Validation Failed: Please ensure all fields are provided." });
     }
-
     const userExists = await User.findOne({ $or: [{ email }, { username }] });
     if (userExists) {
-      return res.status(400).json({ message: "User already exists" });
+      return res.status(400).json({ message: "User with this email or username already exists." });
     }
 
-    const user = await User.create({
-      username,
-      email,
-      password,
-    });
+    const user = await User.create({ username, email, password });
 
     if (user) {
-      res.status(201).json({
+      // Create a clean user object, including the default profile picture
+      const userPayload = {
         _id: user._id,
+        id: user._id, // Add 'id' for frontend convenience
         username: user.username,
         email: user.email,
         isAdmin: user.isAdmin,
+        profilePicture: user.profilePicture,
+      };
+      
+      // **Send the exact same response structure as loginUser**
+      res.status(201).json({
         token: generateToken(user._id),
+        user: userPayload,
       });
     } else {
-      res.status(400).json({ message: "Invalid user data" });
+      res.status(400).json({ message: "Invalid user data during creation." });
     }
   } catch (error) {
-    logger.error(`Registration error: ${error.message}`);
-    res.status(500).json({ message: "Server error" });
+    console.error(`Registration error: ${error.message}`);
+    res.status(500).json({ message: "Server error during registration." });
   }
 };
 
-// User login
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
-
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select('+password');
 
     if (user && (await user.matchPassword(password))) {
-      res.json({
+      // Create a clean user payload WITHOUT the password hash
+      const userPayload = {
         _id: user._id,
+        id: user._id,
         username: user.username,
         email: user.email,
         isAdmin: user.isAdmin,
+        profilePicture: user.profilePicture,
+      };
+      
+      res.json({
         token: generateToken(user._id),
+        user: userPayload,
       });
+
     } else {
-      res.status(401).json({ message: "Invalid credentials" });
+      res.status(401).json({ message: "Invalid email or password" });
     }
   } catch (error) {
-    logger.error(`Login error: ${error.message}`);
-    res.status(500).json({ message: "Server error" });
+    console.error(`Login error: ${error.message}`);
+    res.status(500).json({ message: "Server error during login." });
   }
 };
-
 // GET A USER'S PUBLIC PROFILE
 const getPublicProfile = async (req, res) => {
   try {

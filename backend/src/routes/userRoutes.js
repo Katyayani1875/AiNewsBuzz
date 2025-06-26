@@ -17,7 +17,7 @@ const router = express.Router();
 const upload = multer({ storage }); // Configure multer
 
 // User registration
-router.post("/", registerUser);
+router.post("/register", registerUser);
 // User login
 router.post("/login", loginUser);
 

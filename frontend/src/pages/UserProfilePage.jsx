@@ -1,4 +1,4 @@
-// src/pages/UserProfilePage.jsx (Updated with Functional Likes Tab and Improved UI)
+// src/pages/UserProfilePage.jsx (Definitive Fix with Improved UI)
 
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
@@ -159,6 +159,7 @@ const UserCommentHistory = ({ username }) => {
         queryKey: ['userComments', username],
         queryFn: () => fetchUserComments(username),
         staleTime: 1000 * 60 * 5,
+        enabled: !!username, // Prevent query when username is undefined
     });
 
     if (isLoading) {
@@ -234,6 +235,7 @@ const UserLikesHistory = ({ username }) => {
         queryKey: ['userLikes', username],
         queryFn: () => fetchUserLikedComments(username),
         staleTime: 1000 * 60 * 5,
+        enabled: !!username, // Prevent query when username is undefined
     });
 
     if (isLoading) {
@@ -296,6 +298,7 @@ export const UserProfilePage = () => {
     const { data: profile, isLoading, isError } = useQuery({
         queryKey: ['profile', username],
         queryFn: () => fetchUserProfile(username),
+        enabled: !!username, // The definitive fix - prevents API call when username is undefined
     });
 
     const isOwnProfile = currentUser?.username === username;

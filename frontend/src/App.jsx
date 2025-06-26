@@ -12,6 +12,7 @@ import LuxuryLandingPage from './pages/LuxuryLandingPage';
 import { useAuthStore } from './store/auth.store';
 import { TermsOfServicePage } from './pages/TermsOfServicePage';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
+// import { ForgotPasswordPage } from './pages/ForgotPasswordP
 
 const ProtectedRoute = ({ children }) => {
   const token = useAuthStore((state) => state.token);
@@ -31,7 +32,9 @@ function App() {
       <Routes>
         <Route path="/" element={<PublicOnlyRoute><LuxuryLandingPage /></PublicOnlyRoute>} />  
         <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
-        <Route path="/register" element={<PublicOnlyRoute><RegisterPage /></PublicOnlyRoute>} />     
+        <Route path="/register" element={<PublicOnlyRoute><RegisterPage /></PublicOnlyRoute>} />
+        {/* <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />      */}
         <Route path="/" 
             element={
                 <ProtectedRoute>

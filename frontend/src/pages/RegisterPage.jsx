@@ -1,4 +1,4 @@
-// src/pages/RegisterPage.jsx
+// src/pages/RegisterPage.jsx (Fully Redesigned Professional Split-Screen)
 
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
@@ -67,12 +67,9 @@ export const RegisterPage = () => {
         mutationFn: registerUser,
         onSuccess: (data) => {
             toast.success('Welcome to AI NewsBuzz! Your account has been created.');
-            loginAction(data.token, { 
-                username: data.username, 
-                id: data._id, 
-                profilePicture: data.profilePicture 
-            });
-            navigate('/news');
+            loginAction(data.token, data.user);
+            // Use a forceful redirect to ensure all components (like Navbar) get the new auth state
+            setTimeout(() => { window.location.href = '/news'; }, 500);
         },
         onError: (error) => {
             toast.error(error.response?.data?.message || 'Registration failed. Please check your details.');
@@ -99,7 +96,7 @@ export const RegisterPage = () => {
     return (
         <div className="w-full min-h-screen flex items-center justify-center p-4 bg-background">
             <motion.div
-                initial={{ opacity: 0, y: -20 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, ease: "easeInOut" }}
                 className="w-full max-w-6xl lg:grid lg:grid-cols-2 rounded-2xl shadow-2xl overflow-hidden border border-border/20 bg-card"
@@ -161,7 +158,7 @@ export const RegisterPage = () => {
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.3 }}
                     >
-                        <div className="text-center">
+                        <div className="text-center lg:text-left">
                             <h2 className="text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
                                 Create Account
                             </h2>
