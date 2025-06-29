@@ -1,5 +1,5 @@
 // src/server.js 
-console.log("--- DEPLOYMENT v3: server.js IS RUNNING THE LATEST VERSION ---");
+console.log("--- DEPLOYMENT v-FIXED: Simplified socket architecture ---");
 require("dotenv").config();
 require("./models/User");
 require("./models/News");
@@ -9,17 +9,14 @@ require("./models/Notification");
 require("./models/Channel");
 
 const { server } = require("./app");
+const { initializeSocket } = require("./socket"); 
 const logger = require("./utils/logger");
 const cron = require("node-cron");
 const News = require("./models/News");
 const { fetchNewsFromGNews, saveNewsToDatabase } = require("./services/newsFetcher");
-// const { processArticleAI } = require("./controllers/summaryController"); // We need the main processing function
-
+initializeSocket(server);
 const PORT = process.env.PORT || 5000;
 
-// --- JOB 1: News Ingestion ---
-// This job's only responsibility is to fetch raw news and save it to the DB queue.
-// It runs infrequently to respect the news API's rate limits.
 const runNewsIngestion = async () => {
   logger.info("--- [CRON JOB 1: INGESTION] Starting scheduled news fetch cycle. ---");
   const topicsToRefresh = ["world", "business", "technology", "sports", "science", "entertainment", "health"];
@@ -37,13 +34,9 @@ const runNewsIngestion = async () => {
   logger.info("--- [CRON JOB 1: INGESTION] Finished news fetch cycle. ---");
 };
 
-// --- JOB 2: AI Processing Queue ---
-// This job runs very frequently but processes only ONE article at a time.
-// This is the definitive solution to avoid Gemini's "requests per minute" rate limit.
 const runAIProcessingQueue = async () => {
   logger.info("--- [CRON JOB 2: AI QUEUE] Checking for articles to process... ---");
   try {
-    // Find just one article that has not been processed yet.
     const articleToProcess = await News.findOne({ isProcessed: false });
 
     if (articleToProcess) {
@@ -57,28 +50,9 @@ const runAIProcessingQueue = async () => {
     logger.error(`[AI QUEUE] A fatal error occurred during processing: ${error.message}`);
   }
 };
-
-// --- CRON SCHEDULES ---
-
-// Schedule the Ingestion job to run at the top of every 2nd hour.
-// This is a safe frequency for the GNews free tier.
 cron.schedule("0 */2 * * *", runNewsIngestion);
-
-// Schedule the AI Processing job to run every 30 seconds.
-// This ensures a steady, slow, and reliable processing of the queue.
-// cron.schedule("*/30 * * * * *", runAIProcessingQueue);
-
 // --- SERVER START ---
 server.listen(PORT, () => {
   logger.info(`Server running on port ${PORT}`);
   logger.info("Background jobs for news ingestion and AI processing are scheduled.");
-
-  // To test immediately without waiting for the schedule, uncomment the following block.
-  // This will run the ingestion job once right after the server starts.
-  /*
-  (async () => {
-    logger.info("Running initial news ingestion cycle on server start for testing...");
-    await runNewsIngestion();
-  })();
-  */
 });
