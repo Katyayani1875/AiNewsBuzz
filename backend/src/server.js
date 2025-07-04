@@ -1,5 +1,4 @@
 // src/server.js 
-console.log("--- DEPLOYMENT v-FIXED: Simplified socket architecture ---");
 require("dotenv").config();
 require("./models/User");
 require("./models/News");
