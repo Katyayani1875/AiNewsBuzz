@@ -1,5 +1,307 @@
-// src/pages/RegisterPage.jsx
-import { useState, useEffect, useRef } from 'react';
+// // src/pages/RegisterPage.jsx
+// import { useState, useEffect, useRef } from 'react';
+// import { useNavigate, Link } from 'react-router-dom';
+// import { useMutation } from '@tanstack/react-query';
+// import { registerUser } from '../api/auth.api';
+// import { useAuthStore } from '../store/auth.store';
+// import { motion } from 'framer-motion';
+// import { Logo } from "../components/layout/Logo";
+// import { toast } from "react-hot-toast";
+// import { User, Mail, Lock, ArrowRight, ShieldCheck, Newspaper, Send } from "lucide-react";
+
+// const AuroraBackground = () => (
+//     <div className="absolute inset-0 -z-10 overflow-hidden">
+//         <motion.div
+//             className="absolute top-[-15%] left-[-15%] w-[60%] h-[60%] bg-purple-600/40 rounded-full blur-3xl"
+//             animate={{ x: [-100, 100], y: [-50, 50], rotate: [0, 45] }}
+//             transition={{ duration: 40, repeat: Infinity, ease: "easeInOut", repeatType: "mirror" }}
+//         />
+//         <motion.div
+//             className="absolute bottom-[-15%] right-[-15%] w-[60%] h-[60%] bg-indigo-600/40 rounded-full blur-3xl"
+//             animate={{ x: [100, -100], y: [50, -50], rotate: [-45, 0] }}
+//             transition={{ duration: 35, repeat: Infinity, ease: "easeInOut", repeatType: "mirror" }}
+//         />
+//         <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/30" />
+//     </div>
+// );
+
+// const FeatureCard = ({ icon, title, description }) => (
+//     <motion.div 
+//         className="flex items-start p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20"
+//         whileHover={{ y: -4, backgroundColor: 'rgba(255, 255, 255, 0.15)' }}
+//         transition={{ duration: 0.2, ease: "easeOut" }}
+//         variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
+//     >
+//         <div className="flex-shrink-0 p-2 bg-white/20 rounded-lg mr-4">
+//             {icon}
+//         </div>
+//         <div>
+//             <h3 className="text-lg font-semibold text-white">{title}</h3>
+//             <p className="text-white/80 text-sm mt-1">{description}</p>
+//         </div>
+//     </motion.div>
+// );
+
+// export const RegisterPage = () => {
+//     const [username, setUsername] = useState('');
+//     const [email, setEmail] = useState('');
+//     const [password, setPassword] = useState('');
+//     const navigate = useNavigate();
+//     const loginAction = useAuthStore((state) => state.login);
+//     const googleButtonRef = useRef(null);
+
+//     const { mutate, isPending } = useMutation({
+//         mutationFn: registerUser,
+//         onSuccess: (data) => {
+//             toast.success('Welcome to AI NewsBuzz! Your account has been created.');
+//             loginAction(data.token, data.user);
+//             setTimeout(() => { window.location.href = '/news'; }, 500);
+//         },
+//         onError: (error) => {
+//             toast.error(error.response?.data?.message || 'Registration failed. Please check your details.');
+//         },
+//     });
+
+//     const handleSubmit = (e) => {
+//         e.preventDefault();
+//         if (!username.trim()) {
+//             toast.error('Username is required');
+//             return;
+//         }
+//         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+//             toast.error('Please enter a valid email address');
+//             return;
+//         }
+//         if (password.length < 8) {
+//             toast.error('Password must be at least 8 characters long');
+//             return;
+//         }
+//         mutate({ username, email, password });
+//     };
+
+//     useEffect(() => {
+//         if (window.google && googleButtonRef.current) {
+//             window.google.accounts.id.renderButton(
+//                 googleButtonRef.current,
+//                 { 
+//                     type: "standard",
+//                     size: "large",
+//                     theme: "outline",
+//                     text: "signup_with",
+//                     shape: "rectangular",
+//                     logo_alignment: "left",
+//                     width: "320"
+//                 }
+//             );
+//         }
+//     }, []);
+
+//     return (
+//         <div className="w-full min-h-screen flex items-center justify-center p-4 bg-background">
+//             <motion.div
+//                 initial={{ opacity: 0, y: 20 }}
+//                 animate={{ opacity: 1, y: 0 }}
+//                 transition={{ duration: 0.5, ease: "easeInOut" }}
+//                 className="w-full max-w-6xl lg:grid lg:grid-cols-2 rounded-2xl shadow-2xl overflow-hidden border border-border/20 bg-card"
+//             >
+//                 {/* Left Side - Brand Showcase */}
+//                 <div className="hidden lg:flex flex-col justify-center p-12 text-white relative overflow-hidden bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900">
+//                     <AuroraBackground />
+                    
+//                     <motion.div
+//                         className="relative z-10"
+//                         initial="hidden"
+//                         animate="visible"
+//                         variants={{
+//                             hidden: {},
+//                             visible: { transition: { staggerChildren: 0.1, delayChildren: 0.2 } }
+//                         }}
+//                     >
+//                         <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+//                             <Link to="/" className="flex items-center gap-3 mb-6">
+//                                 <div className="relative">
+//                                     <div className="absolute -inset-2 bg-white/10 rounded-full blur-lg" />
+//                                     <Logo />
+//                                 </div>
+//                                 <span className="text-3xl font-bold tracking-tight">AI NewsBuzz</span>
+//                             </Link>
+//                             <h1 className="text-4xl xl:text-5xl font-bold leading-tight mb-4">
+//                                 Join the AI Revolution
+//                             </h1>
+//                             <p className="text-base xl:text-lg text-white/80 mb-8">
+//                                 Create your account and get personalized AI news delivered to you daily.
+//                             </p>
+//                         </motion.div>
+
+//                         <div className="space-y-4">
+//                             <FeatureCard 
+//                                 icon={<Newspaper size={20} className="text-indigo-300" />} 
+//                                 title="Personalized Feed" 
+//                                 description="News tailored specifically to your interests." 
+//                             />
+//                             <FeatureCard 
+//                                 icon={<Send size={20} className="text-purple-300" />} 
+//                                 title="Daily Digest" 
+//                                 description="A curated email with important AI developments." 
+//                             />
+//                             <FeatureCard 
+//                                 icon={<ShieldCheck size={20} className="text-pink-300" />} 
+//                                 title="Secure Platform" 
+//                                 description="Your data is protected with enterprise-grade security." 
+//                             />
+//                         </div>
+//                     </motion.div>
+//                 </div>
+                
+//                 {/* Right Side - Form Section */}
+//                 <div className="flex items-center justify-center py-12 px-6 sm:px-8 lg:px-12 bg-card/80 backdrop-blur-sm">
+//                     <motion.div 
+//                         className="w-full max-w-md space-y-6"
+//                         initial={{ opacity: 0 }}
+//                         animate={{ opacity: 1 }}
+//                         transition={{ delay: 0.3 }}
+//                     >
+//                         <div className="text-center lg:text-left">
+//                             <h2 className="text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
+//                                 Create Account
+//                             </h2>
+//                             <p className="mt-2 text-sm text-muted-foreground">
+//                                 Join AI NewsBuzz to get started
+//                             </p>
+//                         </div>
+
+//                         <form onSubmit={handleSubmit} className="space-y-4">
+//                             <motion.div
+//                                 initial={{ opacity: 0, y: 10 }}
+//                                 animate={{ opacity: 1, y: 0 }}
+//                                 transition={{ delay: 0.4 }}
+//                                 className="relative"
+//                             >
+//                                 <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+//                                 <input 
+//                                     type="text" 
+//                                     id="username" 
+//                                     required 
+//                                     placeholder="Username" 
+//                                     value={username} 
+//                                     onChange={(e) => setUsername(e.target.value)} 
+//                                     className="w-full pl-11 pr-3 py-3 border border-border bg-background rounded-lg text-foreground placeholder-muted-foreground focus:ring-2 focus:ring-ring focus:outline-none transition-all duration-200"
+//                                 />
+//                             </motion.div>
+                            
+//                             <motion.div
+//                                 initial={{ opacity: 0, y: 10 }}
+//                                 animate={{ opacity: 1, y: 0 }}
+//                                 transition={{ delay: 0.5 }}
+//                                 className="relative"
+//                             >
+//                                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+//                                 <input 
+//                                     type="email" 
+//                                     id="email" 
+//                                     required 
+//                                     placeholder="you@example.com" 
+//                                     value={email} 
+//                                     onChange={(e) => setEmail(e.target.value)} 
+//                                     className="w-full pl-11 pr-3 py-3 border border-border bg-background rounded-lg text-foreground placeholder-muted-foreground focus:ring-2 focus:ring-ring focus:outline-none transition-all duration-200"
+//                                 />
+//                             </motion.div>
+                            
+//                             <motion.div
+//                                 initial={{ opacity: 0, y: 10 }}
+//                                 animate={{ opacity: 1, y: 0 }}
+//                                 transition={{ delay: 0.6 }}
+//                                 className="relative"
+//                             >
+//                                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+//                                 <input 
+//                                     type="password" 
+//                                     id="password" 
+//                                     required 
+//                                     placeholder="Password (min 8 characters)" 
+//                                     value={password} 
+//                                     onChange={(e) => setPassword(e.target.value)} 
+//                                     className="w-full pl-11 pr-3 py-3 border border-border bg-background rounded-lg text-foreground placeholder-muted-foreground focus:ring-2 focus:ring-ring focus:outline-none transition-all duration-200"
+//                                 />
+//                             </motion.div>
+                            
+//                             <motion.button
+//                                 type="submit" 
+//                                 disabled={isPending}
+//                                 initial={{ opacity: 0, y: 10 }}
+//                                 animate={{ opacity: 1, y: 0 }}
+//                                 transition={{ delay: 0.7 }}
+//                                 whileHover={{ scale: 1.02 }}
+//                                 whileTap={{ scale: 0.98 }}
+//                                 className="w-full flex justify-center items-center gap-2 py-3 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background transition-colors duration-300 disabled:opacity-70"
+//                             >
+//                                 {isPending ? (
+//                                     <>
+//                                         <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+//                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+//                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+//                                         </svg>
+//                                         Creating Account...
+//                                     </>
+//                                 ) : (
+//                                     <>
+//                                         Get Started <ArrowRight className="h-4 w-4" />
+//                                     </>
+//                                 )}
+//                             </motion.button>
+//                         </form>
+
+//                         <motion.div
+//                             initial={{ opacity: 0 }}
+//                             animate={{ opacity: 1 }}
+//                             transition={{ delay: 0.8 }}
+//                             className="relative my-4"
+//                         >
+//                             <div className="absolute inset-0 flex items-center">
+//                                 <div className="w-full border-t border-border/50" />
+//                             </div>
+//                             <div className="relative flex justify-center text-xs uppercase">
+//                                 <span className="bg-card/80 backdrop-blur-sm px-2 text-muted-foreground">
+//                                     Or sign up with
+//                                 </span>
+//                             </div>
+//                         </motion.div>
+
+//                         <motion.div
+//                             initial={{ opacity: 0 }}
+//                             animate={{ opacity: 1 }}
+//                             transition={{ delay: 0.9 }}
+//                             className="flex justify-center w-full"
+//                         >
+//                             <div 
+//                                 ref={googleButtonRef} 
+//                                 id="google-signup-button"
+//                                 className="w-full flex justify-center"
+//                             />
+//                         </motion.div>
+
+//                         <motion.p
+//                             initial={{ opacity: 0 }}
+//                             animate={{ opacity: 1 }}
+//                             transition={{ delay: 1 }}
+//                             className="mt-6 text-center text-sm text-muted-foreground"
+//                         >
+//                             Already have an account?{" "}
+//                             <Link 
+//                                 to="/login" 
+//                                 className="font-semibold text-primary hover:underline hover:text-primary/80 transition-colors"
+//                             >
+//                                 Sign In
+//                             </Link>
+//                         </motion.p>
+//                     </motion.div>
+//                 </div>
+//             </motion.div>
+//         </div>
+//     );
+// };
+
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { registerUser } from '../api/auth.api';
@@ -8,299 +310,335 @@ import { motion } from 'framer-motion';
 import { Logo } from "../components/layout/Logo";
 import { toast } from "react-hot-toast";
 import { User, Mail, Lock, ArrowRight, ShieldCheck, Newspaper, Send } from "lucide-react";
+import { handleGoogleCredentialResponse } from '../utils/googleAuthCallback';
 
 const AuroraBackground = () => (
-    <div className="absolute inset-0 -z-10 overflow-hidden">
-        <motion.div
-            className="absolute top-[-15%] left-[-15%] w-[60%] h-[60%] bg-purple-600/40 rounded-full blur-3xl"
-            animate={{ x: [-100, 100], y: [-50, 50], rotate: [0, 45] }}
-            transition={{ duration: 40, repeat: Infinity, ease: "easeInOut", repeatType: "mirror" }}
-        />
-        <motion.div
-            className="absolute bottom-[-15%] right-[-15%] w-[60%] h-[60%] bg-indigo-600/40 rounded-full blur-3xl"
-            animate={{ x: [100, -100], y: [50, -50], rotate: [-45, 0] }}
-            transition={{ duration: 35, repeat: Infinity, ease: "easeInOut", repeatType: "mirror" }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/30" />
-    </div>
+  <div className="absolute inset-0 -z-10 overflow-hidden">
+    <motion.div
+      className="absolute top-[-15%] left-[-15%] w-[60%] h-[60%] bg-purple-600/40 rounded-full blur-3xl"
+      animate={{ x: [-100, 100], y: [-50, 50], rotate: [0, 45] }}
+      transition={{ duration: 40, repeat: Infinity, ease: "easeInOut", repeatType: "mirror" }}
+    />
+    <motion.div
+      className="absolute bottom-[-15%] right-[-15%] w-[60%] h-[60%] bg-indigo-600/40 rounded-full blur-3xl"
+      animate={{ x: [100, -100], y: [50, -50], rotate: [-45, 0] }}
+      transition={{ duration: 35, repeat: Infinity, ease: "easeInOut", repeatType: "mirror" }}
+    />
+    <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/30" />
+  </div>
 );
 
 const FeatureCard = ({ icon, title, description }) => (
-    <motion.div 
-        className="flex items-start p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20"
-        whileHover={{ y: -4, backgroundColor: 'rgba(255, 255, 255, 0.15)' }}
-        transition={{ duration: 0.2, ease: "easeOut" }}
-        variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
-    >
-        <div className="flex-shrink-0 p-2 bg-white/20 rounded-lg mr-4">
-            {icon}
-        </div>
-        <div>
-            <h3 className="text-lg font-semibold text-white">{title}</h3>
-            <p className="text-white/80 text-sm mt-1">{description}</p>
-        </div>
-    </motion.div>
+  <motion.div 
+    className="flex items-start p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20"
+    whileHover={{ y: -4, backgroundColor: 'rgba(255, 255, 255, 0.15)' }}
+    transition={{ duration: 0.2, ease: "easeOut" }}
+  >
+    <div className="flex-shrink-0 p-2 bg-white/20 rounded-lg mr-4">
+      {icon}
+    </div>
+    <div>
+      <h3 className="text-lg font-semibold text-white">{title}</h3>
+      <p className="text-white/80 text-sm mt-1">{description}</p>
+    </div>
+  </motion.div>
 );
 
 export const RegisterPage = () => {
-    const [username, setUsername] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const navigate = useNavigate();
-    const loginAction = useAuthStore((state) => state.login);
-    const googleButtonRef = useRef(null);
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const navigate = useNavigate();
+  const loginAction = useAuthStore((state) => state.login);
+  const googleButtonRef = useRef(null);
 
-    const { mutate, isPending } = useMutation({
-        mutationFn: registerUser,
-        onSuccess: (data) => {
-            toast.success('Welcome to AI NewsBuzz! Your account has been created.');
-            loginAction(data.token, data.user);
-            setTimeout(() => { window.location.href = '/news'; }, 500);
-        },
-        onError: (error) => {
-            toast.error(error.response?.data?.message || 'Registration failed. Please check your details.');
-        },
-    });
+  // Memoize the callback to prevent unnecessary re-renders
+  const onGoogleResponse = useCallback(handleGoogleCredentialResponse, []);
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (!username.trim()) {
-            toast.error('Username is required');
-            return;
-        }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            toast.error('Please enter a valid email address');
-            return;
-        }
-        if (password.length < 8) {
-            toast.error('Password must be at least 8 characters long');
-            return;
-        }
-        mutate({ username, email, password });
+  const { mutate, isPending } = useMutation({
+    mutationFn: registerUser,
+    onSuccess: (data) => {
+      toast.success('Welcome to AI NewsBuzz! Your account has been created.');
+      loginAction(data.token, data.user);
+      setTimeout(() => { window.location.href = '/news'; }, 500);
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Registration failed. Please check your details.');
+    },
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!username.trim()) {
+      toast.error('Username is required');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    if (password.length < 8) {
+      toast.error('Password must be at least 8 characters long');
+      return;
+    }
+    mutate({ username, email, password });
+  };
+
+  useEffect(() => {
+    const initializeGoogleSignIn = () => {
+      if (!window.google) {
+        const script = document.createElement('script');
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.async = true;
+        script.defer = true;
+        script.onload = initializeGoogleAuth;
+        document.head.appendChild(script);
+      } else {
+        initializeGoogleAuth();
+      }
     };
 
-    useEffect(() => {
-        if (window.google && googleButtonRef.current) {
-            window.google.accounts.id.renderButton(
-                googleButtonRef.current,
-                { 
-                    type: "standard",
-                    size: "large",
-                    theme: "outline",
-                    text: "signup_with",
-                    shape: "rectangular",
-                    logo_alignment: "left",
-                    width: "320"
-                }
-            );
-        }
-    }, []);
+    const initializeGoogleAuth = () => {
+      window.google.accounts.id.initialize({
+        client_id: "694198870363-9hb9h8ug0m59o6fdc25ek2h86c7rj2k7.apps.googleusercontent.com",
+        callback: onGoogleResponse,
+        auto_select: false,
+        ux_mode: 'popup'
+      });
 
-    return (
-        <div className="w-full min-h-screen flex items-center justify-center p-4 bg-background">
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, ease: "easeInOut" }}
-                className="w-full max-w-6xl lg:grid lg:grid-cols-2 rounded-2xl shadow-2xl overflow-hidden border border-border/20 bg-card"
-            >
-                {/* Left Side - Brand Showcase */}
-                <div className="hidden lg:flex flex-col justify-center p-12 text-white relative overflow-hidden bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900">
-                    <AuroraBackground />
-                    
-                    <motion.div
-                        className="relative z-10"
-                        initial="hidden"
-                        animate="visible"
-                        variants={{
-                            hidden: {},
-                            visible: { transition: { staggerChildren: 0.1, delayChildren: 0.2 } }
-                        }}
-                    >
-                        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
-                            <Link to="/" className="flex items-center gap-3 mb-6">
-                                <div className="relative">
-                                    <div className="absolute -inset-2 bg-white/10 rounded-full blur-lg" />
-                                    <Logo />
-                                </div>
-                                <span className="text-3xl font-bold tracking-tight">AI NewsBuzz</span>
-                            </Link>
-                            <h1 className="text-4xl xl:text-5xl font-bold leading-tight mb-4">
-                                Join the AI Revolution
-                            </h1>
-                            <p className="text-base xl:text-lg text-white/80 mb-8">
-                                Create your account and get personalized AI news delivered to you daily.
-                            </p>
-                        </motion.div>
+      if (googleButtonRef.current) {
+        window.google.accounts.id.renderButton(
+          googleButtonRef.current,
+          { 
+            type: "standard",
+            size: "large",
+            theme: "outline",
+            text: "signup_with",
+            shape: "rectangular",
+            logo_alignment: "left",
+            width: "320"
+          }
+        );
+      }
+    };
 
-                        <div className="space-y-4">
-                            <FeatureCard 
-                                icon={<Newspaper size={20} className="text-indigo-300" />} 
-                                title="Personalized Feed" 
-                                description="News tailored specifically to your interests." 
-                            />
-                            <FeatureCard 
-                                icon={<Send size={20} className="text-purple-300" />} 
-                                title="Daily Digest" 
-                                description="A curated email with important AI developments." 
-                            />
-                            <FeatureCard 
-                                icon={<ShieldCheck size={20} className="text-pink-300" />} 
-                                title="Secure Platform" 
-                                description="Your data is protected with enterprise-grade security." 
-                            />
-                        </div>
-                    </motion.div>
+    // Make the callback available globally
+    window.handleGoogleCredentialResponse = onGoogleResponse;
+    initializeGoogleSignIn();
+
+    return () => {
+      // Clean up
+      delete window.handleGoogleCredentialResponse;
+      if (window.google?.accounts?.id) {
+        window.google.accounts.id.cancel();
+      }
+    };
+  }, [onGoogleResponse]);
+
+  return (
+    <div className="w-full min-h-screen flex items-center justify-center p-4 bg-background">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeInOut" }}
+        className="w-full max-w-6xl lg:grid lg:grid-cols-2 rounded-2xl shadow-2xl overflow-hidden border border-border/20 bg-card"
+      >
+        {/* Left Side - Brand Showcase */}
+        <div className="hidden lg:flex flex-col justify-center p-12 text-white relative overflow-hidden bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900">
+          <AuroraBackground />
+          
+          <motion.div
+            className="relative z-10"
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: {},
+              visible: { transition: { staggerChildren: 0.1, delayChildren: 0.2 } }
+            }}
+          >
+            <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+              <Link to="/" className="flex items-center gap-3 mb-6">
+                <div className="relative">
+                  <div className="absolute -inset-2 bg-white/10 rounded-full blur-lg" />
+                  <Logo />
                 </div>
-                
-                {/* Right Side - Form Section */}
-                <div className="flex items-center justify-center py-12 px-6 sm:px-8 lg:px-12 bg-card/80 backdrop-blur-sm">
-                    <motion.div 
-                        className="w-full max-w-md space-y-6"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.3 }}
-                    >
-                        <div className="text-center lg:text-left">
-                            <h2 className="text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
-                                Create Account
-                            </h2>
-                            <p className="mt-2 text-sm text-muted-foreground">
-                                Join AI NewsBuzz to get started
-                            </p>
-                        </div>
-
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.4 }}
-                                className="relative"
-                            >
-                                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                <input 
-                                    type="text" 
-                                    id="username" 
-                                    required 
-                                    placeholder="Username" 
-                                    value={username} 
-                                    onChange={(e) => setUsername(e.target.value)} 
-                                    className="w-full pl-11 pr-3 py-3 border border-border bg-background rounded-lg text-foreground placeholder-muted-foreground focus:ring-2 focus:ring-ring focus:outline-none transition-all duration-200"
-                                />
-                            </motion.div>
-                            
-                            <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.5 }}
-                                className="relative"
-                            >
-                                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                <input 
-                                    type="email" 
-                                    id="email" 
-                                    required 
-                                    placeholder="you@example.com" 
-                                    value={email} 
-                                    onChange={(e) => setEmail(e.target.value)} 
-                                    className="w-full pl-11 pr-3 py-3 border border-border bg-background rounded-lg text-foreground placeholder-muted-foreground focus:ring-2 focus:ring-ring focus:outline-none transition-all duration-200"
-                                />
-                            </motion.div>
-                            
-                            <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.6 }}
-                                className="relative"
-                            >
-                                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                <input 
-                                    type="password" 
-                                    id="password" 
-                                    required 
-                                    placeholder="Password (min 8 characters)" 
-                                    value={password} 
-                                    onChange={(e) => setPassword(e.target.value)} 
-                                    className="w-full pl-11 pr-3 py-3 border border-border bg-background rounded-lg text-foreground placeholder-muted-foreground focus:ring-2 focus:ring-ring focus:outline-none transition-all duration-200"
-                                />
-                            </motion.div>
-                            
-                            <motion.button
-                                type="submit" 
-                                disabled={isPending}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.7 }}
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="w-full flex justify-center items-center gap-2 py-3 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background transition-colors duration-300 disabled:opacity-70"
-                            >
-                                {isPending ? (
-                                    <>
-                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        Creating Account...
-                                    </>
-                                ) : (
-                                    <>
-                                        Get Started <ArrowRight className="h-4 w-4" />
-                                    </>
-                                )}
-                            </motion.button>
-                        </form>
-
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.8 }}
-                            className="relative my-4"
-                        >
-                            <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-border/50" />
-                            </div>
-                            <div className="relative flex justify-center text-xs uppercase">
-                                <span className="bg-card/80 backdrop-blur-sm px-2 text-muted-foreground">
-                                    Or sign up with
-                                </span>
-                            </div>
-                        </motion.div>
-
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.9 }}
-                            className="flex justify-center w-full"
-                        >
-                            <div 
-                                ref={googleButtonRef} 
-                                id="google-signup-button"
-                                className="w-full flex justify-center"
-                            />
-                        </motion.div>
-
-                        <motion.p
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 1 }}
-                            className="mt-6 text-center text-sm text-muted-foreground"
-                        >
-                            Already have an account?{" "}
-                            <Link 
-                                to="/login" 
-                                className="font-semibold text-primary hover:underline hover:text-primary/80 transition-colors"
-                            >
-                                Sign In
-                            </Link>
-                        </motion.p>
-                    </motion.div>
-                </div>
+                <span className="text-3xl font-bold tracking-tight">AI NewsBuzz</span>
+              </Link>
+              <h1 className="text-4xl xl:text-5xl font-bold leading-tight mb-4">
+                Join the AI Revolution
+              </h1>
+              <p className="text-base xl:text-lg text-white/80 mb-8">
+                Create your account and get personalized AI news delivered to you daily.
+              </p>
             </motion.div>
-        </div>
-    );
-};
 
+            <div className="space-y-4">
+              <FeatureCard 
+                icon={<Newspaper size={20} className="text-indigo-300" />} 
+                title="Personalized Feed" 
+                description="News tailored specifically to your interests." 
+              />
+              <FeatureCard 
+                icon={<Send size={20} className="text-purple-300" />} 
+                title="Daily Digest" 
+                description="A curated email with important AI developments." 
+              />
+              <FeatureCard 
+                icon={<ShieldCheck size={20} className="text-pink-300" />} 
+                title="Secure Platform" 
+                description="Your data is protected with enterprise-grade security." 
+              />
+            </div>
+          </motion.div>
+        </div>
+        
+        {/* Right Side - Form Section */}
+        <div className="flex items-center justify-center py-12 px-6 sm:px-8 lg:px-12 bg-card/80 backdrop-blur-sm">
+          <motion.div 
+            className="w-full max-w-md space-y-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <div className="text-center lg:text-left">
+              <h2 className="text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
+                Create Account
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Join AI NewsBuzz to get started
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="relative"
+              >
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <input 
+                  type="text" 
+                  id="username" 
+                  required 
+                  placeholder="Username" 
+                  value={username} 
+                  onChange={(e) => setUsername(e.target.value)} 
+                  className="w-full pl-11 pr-3 py-3 border border-border bg-background rounded-lg text-foreground placeholder-muted-foreground focus:ring-2 focus:ring-ring focus:outline-none transition-all duration-200"
+                />
+              </motion.div>
+              
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="relative"
+              >
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <input 
+                  type="email" 
+                  id="email" 
+                  required 
+                  placeholder="you@example.com" 
+                  value={email} 
+                  onChange={(e) => setEmail(e.target.value)} 
+                  className="w-full pl-11 pr-3 py-3 border border-border bg-background rounded-lg text-foreground placeholder-muted-foreground focus:ring-2 focus:ring-ring focus:outline-none transition-all duration-200"
+                />
+              </motion.div>
+              
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                className="relative"
+              >
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <input 
+                  type="password" 
+                  id="password" 
+                  required 
+                  placeholder="Password (min 8 characters)" 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)} 
+                  className="w-full pl-11 pr-3 py-3 border border-border bg-background rounded-lg text-foreground placeholder-muted-foreground focus:ring-2 focus:ring-ring focus:outline-none transition-all duration-200"
+                />
+              </motion.div>
+              
+              <motion.button
+                type="submit" 
+                disabled={isPending}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full flex justify-center items-center gap-2 py-3 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background transition-colors duration-300 disabled:opacity-70"
+              >
+                {isPending ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Creating Account...
+                  </>
+                ) : (
+                  <>
+                    Get Started <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </motion.button>
+            </form>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.8 }}
+              className="relative my-4"
+            >
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border/50" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card/80 backdrop-blur-sm px-2 text-muted-foreground">
+                  Or sign up with
+                </span>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.9 }}
+              className="flex justify-center w-full"
+            >
+              <div 
+                ref={googleButtonRef} 
+                id="google-signup-button"
+                className="w-full flex justify-center"
+              />
+            </motion.div>
+
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1 }}
+              className="mt-6 text-center text-sm text-muted-foreground"
+            >
+              Already have an account?{" "}
+              <Link 
+                to="/login" 
+                className="font-semibold text-primary hover:underline hover:text-primary/80 transition-colors"
+              >
+                Sign In
+              </Link>
+            </motion.p>
+          </motion.div>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
 // // src/pages/RegisterPage.jsx (Fully Redesigned Professional Split-Screen)
 
 // import { useState } from 'react';
