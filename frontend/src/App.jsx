@@ -12,7 +12,8 @@ import LuxuryLandingPage from './pages/LuxuryLandingPage';
 import { useAuthStore } from './store/auth.store';
 import { TermsOfServicePage } from './pages/TermsOfServicePage';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
-// import { ForgotPasswordPage } from './pages/ForgotPasswordP
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 
 const ProtectedRoute = ({ children }) => {
   const token = useAuthStore((state) => state.token);
@@ -33,8 +34,10 @@ function App() {
         <Route path="/" element={<PublicOnlyRoute><LuxuryLandingPage /></PublicOnlyRoute>} />  
         <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
         <Route path="/register" element={<PublicOnlyRoute><RegisterPage /></PublicOnlyRoute>} />
-        {/* <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />      */}
+              {/* 2. ADD THE PUBLIC PASSWORD RESET ROUTES */}
+          {/* These routes should be accessible to everyone, logged in or not */}
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
         <Route path="/" 
             element={
                 <ProtectedRoute>
