@@ -1,3 +1,40 @@
+// backend/src/app.js
+const express = require("express");
+const cors = require("cors");
+const http = require("http");
+const connectDB = require("./config/db");
+const routes = require("./routes");
+const { errorHandler } = require("./middlewares/errorMiddleware");
+
+const app = express();
+const server = http.createServer(app); 
+
+// --- CORS CONFIGURATION FOR EXPRESS ROUTES ---
+const allowedOrigins = [
+  'https://ai-news-buzz.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+];
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+}));
+
+// --- MIDDLEWARE SETUP ---
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// --- DATABASE CONNECTION ---
+connectDB();
+
+// --- API ROUTES ---
+app.use("/api", routes);
+
+app.use(errorHandler);
+
+module.exports = { server };
+
 // // backend/src/app.js (FINAL, BULLETPROOF VERSION)
 
 // const express = require("express");
@@ -103,39 +140,3 @@
 
 // // --- EXPORT THE APP AND SERVER ---
 // module.exports = { app, server };
-// backend/src/app.js
-const express = require("express");
-const cors = require("cors");
-const http = require("http");
-const connectDB = require("./config/db");
-const routes = require("./routes");
-const { errorHandler } = require("./middlewares/errorMiddleware");
-
-const app = express();
-const server = http.createServer(app); 
-
-// --- CORS CONFIGURATION FOR EXPRESS ROUTES ---
-const allowedOrigins = [
-  'https://ai-news-buzz.vercel.app',
-  'http://localhost:5173',
-  'http://localhost:3000',
-];
-
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true,
-}));
-
-// --- MIDDLEWARE SETUP ---
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// --- DATABASE CONNECTION ---
-connectDB();
-
-// --- API ROUTES ---
-app.use("/api", routes);
-
-app.use(errorHandler);
-
-module.exports = { server };

@@ -5,9 +5,94 @@
     <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AINewsBuzz</title>
+    
+    <!-- Load Google Identity Services (GSI) script here in <head> -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+  </head>
+  <body>
+    <!-- The root element for your React app -->
+    <div id="root"></div>
+
+    <!-- Google Identity Services client configuration div -->
+    <!-- This div is CRITICAL for GSI to initialize, but it WILL NOT auto-render a button now. -->
+    <!-- It only provides the client_id and callback information. -->
+    <div id="g_id_onload"
+        data-client_id="694198870363-9hb9h8ug0m59o6fdc25ek2h86c7rj2k7.apps.googleusercontent.com" 
+        data-callback="handleGoogleCredentialResponse" 
+        data-auto_prompt="false">  
+    </div>
+
+    <!-- REMOVED: The global <div class="g_id_signin"> that was here. -->
+    <!-- It's no longer needed because buttons are explicitly rendered by React components. -->
+
+    <!-- Define the global callback function here in index.html -->
+    <!-- This ensures the function exists in the global `window` scope when GSI needs it. -->
+    <script type="text/javascript">
+      // For local development, VITE_API_URL should be hardcoded here for this inline script.
+      const VITE_API_URL_FOR_GSI_CALLBACK = "http://localhost:5000/api"; 
+      
+      window.handleGoogleCredentialResponse = async (response) => {
+        const idToken = response.credential;
+        console.log("Encoded ID Token (from Google):", idToken);
+
+        try {
+          const { useAuthStore } = await import('./src/store/auth.store.js'); 
+          const { toast } = await import('react-hot-toast'); 
+
+          const loginAction = useAuthStore.getState().login;
+          const backendBaseUrl = VITE_API_URL_FOR_GSI_CALLBACK; 
+          const googleAuthEndpoint = `${backendBaseUrl}/auth/google`;
+
+          console.log("Sending ID Token to backend:", googleAuthEndpoint);
+
+          const backendResponse = await fetch(googleAuthEndpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token: idToken }),
+          });
+
+          if (!backendResponse.ok) {
+            const errorData = await backendResponse.json();
+            console.error('Backend Google Auth failed:', errorData);
+            toast.error(errorData.message || 'Google Sign-In failed on our server. Please try again.');
+            return;
+          }
+
+          const data = await backendResponse.json();
+          console.log('Backend Google Auth successful:', data);
+
+          loginAction(data.token, data.user);
+          toast.success('Successfully signed in with Google!');
+          
+          window.location.href = '/news'; 
+
+        } catch (error) {
+          console.error('Error during Google Sign-In process:', error);
+          if (typeof toast !== 'undefined' && toast.error) {
+             toast.error('An unexpected error occurred during Google Sign-In. Please check console.');
+          } else {
+             alert('An unexpected error occurred during Google Sign-In. Please check console.');
+          }
+        }
+      };
+    </script>
+
+    <!-- Your main React application script. This runs AFTER the global callback is defined. -->
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+<!-- <!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AINewsBuzz</title>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
-</html>
+</html> -->

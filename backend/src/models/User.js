@@ -19,6 +19,7 @@ const userSchema = new mongoose.Schema(
     website: { type: String, maxlength: 100, default: "" },
     passwordResetToken: String,
     passwordResetExpires: Date,
+    googleId: { type: String, unique: true, sparse: true },
     // Existing fields
     followedTopics: [{ type: mongoose.Schema.Types.ObjectId, ref: "Channel" }], // Reference to Channel model
   },

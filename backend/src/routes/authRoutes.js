@@ -4,7 +4,7 @@ const {
   forgotPassword,validateResetToken, resetPassword,
   registerUser,
   loginUser,
-  getMyProfile,
+  getMyProfile,  googleAuth,
 } = require("../controllers/authController");
 const { verifyToken, isAdmin } = require("../middlewares/authMiddleware");
 
@@ -12,6 +12,7 @@ const router = express.Router();
 
 router.post("/register", registerUser);
 router.post("/login", loginUser);
+router.post("/google", googleAuth);
 router.get("/profile", verifyToken, getMyProfile);
 router.post('/forgot-password', forgotPassword);
 router.get('/reset-password/:token', validateResetToken);
