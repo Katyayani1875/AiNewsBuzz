@@ -96,3 +96,46 @@ export const logoutUser = async () => {
     throw new Error(error.response?.data?.message || 'Logout failed');
   }
 };
+
+/**
+ * Sends a request to the backend to initiate the password reset process.
+ * @param {{ email: string }} payload - The user's email.
+ * @returns {Promise<object>} The success message from the server.
+ */
+export const forgotPassword = async ({ email }) => {
+    try {
+        const response = await authApi.post('/forgot-password', { email });
+        return response.data;
+    } catch (error) {
+        // Throw a clean error message for react-query to catch
+        throw new Error(error.response?.data?.message || 'Failed to send reset link.');
+    }
+};
+
+/**
+ * Asks the backend to validate a password reset token from the URL.
+ * @param {string} token - The reset token.
+ * @returns {Promise<object>} The validation message from the server.
+ */
+export const validateResetToken = async (token) => {
+    try {
+        const response = await authApi.get(`/reset-password/${token}`);
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data?.message || 'Invalid or expired token.');
+    }
+};
+
+/**
+ * Sends the new password to the backend to finalize the reset.
+ * @param {{ token: string, password: string }} payload - The token and new password.
+ * @returns {Promise<object>} The final success message from the server.
+ */
+export const resetPassword = async ({ token, password }) => {
+    try {
+        const response = await authApi.put(`/reset-password/${token}`, { password });
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data?.message || 'Failed to update password.');
+    }
+};

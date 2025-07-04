@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema(
   {
     username: { type: String, required: true, unique: true, trim: true },
     email: { type: String, required: true, unique: true, trim: true },
-    password: { type: String, required: true },
+     password: { type: String, required: true, select: false },
     isAdmin: { type: Boolean, default: false },
 
     // --- NEW PROFILE FIELDS ---
@@ -17,8 +17,8 @@ const userSchema = new mongoose.Schema(
     bio: { type: String, maxlength: 160, default: "" },
     location: { type: String, maxlength: 50, default: "" },
     website: { type: String, maxlength: 100, default: "" },
-    passwordResetToken: String,
-    passwordResetExpires: Date,
+    passwordResetToken: { type: String, select: false },
+    passwordResetExpires: { type: Date, select: false },
     googleId: { type: String, unique: true, sparse: true },
     // Existing fields
     followedTopics: [{ type: mongoose.Schema.Types.ObjectId, ref: "Channel" }], // Reference to Channel model
