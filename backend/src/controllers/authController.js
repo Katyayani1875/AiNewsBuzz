@@ -208,39 +208,42 @@ const getUserLikedComments = async (req, res) => {
   }
 };
 
+// In backend/src/controllers/authController.js
+
 // FORGOT PASSWORD: Generate token and send email
 const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
     const user = await User.findOne({ email });
 
+    // Always send a generic success message to prevent email enumeration
     if (!user) {
-      // Send a generic success message even if user not found to prevent email enumeration
+      logger.info(`Password reset requested for non-existent user: ${email}`);
       return res.status(200).json({ message: 'If a user with that email exists, a password reset link has been sent.' });
     }
 
-    // Generate a random token
+    // --- TOKEN CREATION ---
     const resetToken = crypto.randomBytes(20).toString('hex');
+    
+    // --- FINGERPRINT (HASH) CREATION ---
+    user.passwordResetToken = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
 
-    // Set token and expiration on user document (e.g., expires in 1 hour)
-    user.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
     user.passwordResetExpires = Date.now() + 3600000; // 1 hour
 
     await user.save();
 
-    // Create the reset URL for the email
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
     const mailOptions = {
-      from: '"AI NewsBuzz Support" <support@ainewsbuzz.com>',
-      to: user.email,
-      subject: 'Password Reset Request',
-      text: `You are receiving this email because you (or someone else) have requested a password reset. Please click the following link, or paste it into your browser to complete the process: \n\n${resetUrl}\n\nIf you did not request this, please ignore this email and your password will remain unchanged.`,
-      html: `<p>You are receiving this email because you (or someone else) have requested a password reset. Please click the following link to complete the process:</p>
-             <p><a href="${resetUrl}">Reset Password</a></p>
-             <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>`
+        from: `"AI NewsBuzz Support" <${process.env.EMAIL_USER}>`,
+        to: user.email,
+        subject: 'Password Reset Request',
+        text: `You are receiving this email because you (or someone else) have requested a password reset. Please click the following link, or paste it into your browser to complete the process: \n\n${resetUrl}\n\nIf you did not request this, please ignore this email and your password will remain unchanged.`,
+        html: `<p>You are receiving this email because you (or someone else) have requested a password reset. Please click the following link to complete the process:</p><p><a href="${resetUrl}">Reset Password</a></p><p>If you did not request this, please ignore this email and your password will remain unchanged.</p>`
     };
-
     await transporter.sendMail(mailOptions);
     
     res.status(200).json({ message: 'If a user with that email exists, a password reset link has been sent.' });
@@ -251,11 +254,16 @@ const forgotPassword = async (req, res) => {
   }
 };
 
-// VALIDATE RESET TOKEN: Check if the token is valid before showing the reset form
+// VALIDATE RESET TOKEN: Check if the token is valid
 const validateResetToken = async (req, res) => {
   try {
-    const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+    // --- RE-CREATE THE FINGERPRINT (HASH) from the URL token ---
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(req.params.token)
+      .digest('hex');
 
+    // Find the user by the HASHED token and check for expiration
     const user = await User.findOne({
       passwordResetToken: hashedToken,
       passwordResetExpires: { $gt: Date.now() }
@@ -274,7 +282,11 @@ const validateResetToken = async (req, res) => {
 // RESET PASSWORD: Update the user's password
 const resetPassword = async (req, res) => {
   try {
-    const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+    // --- RE-CREATE THE FINGERPRINT (HASH) one last time for security ---
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(req.params.token)
+      .digest('hex');
 
     const user = await User.findOne({
       passwordResetToken: hashedToken,
@@ -285,9 +297,10 @@ const resetPassword = async (req, res) => {
       return res.status(400).json({ message: 'Password reset token is invalid or has expired.' });
     }
 
-    // Set the new password
+    // Set the new password (the pre-save hook will hash it)
     user.password = req.body.password;
-    // Clear the reset token fields
+    
+    // Clear the reset token fields so the link cannot be used again
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
 
@@ -297,79 +310,6 @@ const resetPassword = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Server error.' });
   }
-};
-const googleAuth = async (req, res) => {
-    const { token } = req.body; // The ID token sent from the frontend
-
-    if (!token) {
-        logger.warn('Google Auth: ID token is missing from request body.');
-        return res.status(400).json({ message: 'Google ID token is missing.' });
-    }
-
-    try {
-        const ticket = await client.verifyIdToken({
-            idToken: token,
-            audience: GOOGLE_CLIENT_ID, // This ensures the token was issued for YOUR app
-        });
-
-        const payload = ticket.getPayload();
-        const googleId = payload['sub']; // Google's unique user ID
-        const email = payload['email'];
-        const name = payload['name'];
-        const picture = payload['picture'];
-
-        if (!email) {
-            logger.error(`Google Auth: No email in payload for googleId ${googleId}.`);
-            return res.status(400).json({ message: 'Google account missing email address.' });
-        }
-
-        let user = await User.findOne({ $or: [{ googleId: googleId }, { email: email }] });
-
-        if (!user) {
-            // User does not exist, create a new one.
-            const randomPassword = crypto.randomBytes(16).toString('hex'); // Generate dummy password
-            
-            user = new User({
-                username: name || email.split('@')[0], // Use Google name, or part of email as username
-                email: email,
-                password: randomPassword, // This will be hashed by the pre-save hook
-                profilePicture: { url: picture }, // Use Google profile picture
-                googleId: googleId,
-            });
-            await user.save();
-            logger.info(`Google Auth: New user registered - ${email}`);
-        } else {
-            // User exists, update or link Google ID if necessary
-            if (!user.googleId) {
-                user.googleId = googleId;
-                logger.info(`Google Auth: Existing user ${email} linked with Google ID.`);
-            }
-            // Always update profile picture from Google (can be useful if user changes it)
-            user.profilePicture.url = picture; 
-            await user.save();
-            logger.info(`Google Auth: User ${email} logged in.`);
-        }
-
-        // Generate your application's JWT for the logged-in/registered user
-        const appToken = generateToken(user._id);
-
-        // Send back your app's token and a clean user object
-        res.status(200).json({
-            token: appToken,
-            user: {
-                _id: user._id,
-                id: user._id,
-                username: user.username,
-                email: user.email,
-                isAdmin: user.isAdmin,
-                profilePicture: user.profilePicture,
-            },
-        });
-
-    } catch (error) {
-        logger.error(`Google Auth Verification Error: ${error.message}`);
-        res.status(401).json({ message: 'Google authentication failed. Invalid token or server error.' });
-    }
 };
 
 module.exports = {
