@@ -216,76 +216,143 @@ const forgotPassword = async (req, res) => {
     const { email } = req.body;
     const user = await User.findOne({ email });
 
-    // Always send a generic success message to prevent email enumeration
     if (!user) {
-      logger.info(`Password reset requested for non-existent user: ${email}`);
-      return res.status(200).json({ message: 'If a user with that email exists, a password reset link has been sent.' });
+      logger.info(`Password reset requested for non-existent email: ${email}`);
+      return res.status(200).json({ 
+        message: 'If a user with that email exists, a password reset link has been sent.' 
+      });
     }
 
-    // --- TOKEN CREATION ---
-    const resetToken = crypto.randomBytes(20).toString('hex');
+    // Generate plaintext token
+    const resetToken = crypto.randomBytes(32).toString('hex');
     
-    // --- FINGERPRINT (HASH) CREATION ---
-    user.passwordResetToken = crypto
+    // Hash the token before saving to DB
+    const hashedToken = crypto
       .createHash('sha256')
       .update(resetToken)
       .digest('hex');
 
-    user.passwordResetExpires = Date.now() + 3600000; // 1 hour
+    user.passwordResetToken = hashedToken;
+    user.passwordResetExpires = Date.now() + 3600000; // 1 hour from now
+    
+    // Clear any existing reset token first
+    await user.save({ validateBeforeSave: false });
 
-    await user.save();
-
+    // Create reset URL with plaintext token
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
     const mailOptions = {
-        from: `"AI NewsBuzz Support" <${process.env.EMAIL_USER}>`,
-        to: user.email,
-        subject: 'Password Reset Request',
-        text: `You are receiving this email because you (or someone else) have requested a password reset. Please click the following link, or paste it into your browser to complete the process: \n\n${resetUrl}\n\nIf you did not request this, please ignore this email and your password will remain unchanged.`,
-        html: `<p>You are receiving this email because you (or someone else) have requested a password reset. Please click the following link to complete the process:</p><p><a href="${resetUrl}">Reset Password</a></p><p>If you did not request this, please ignore this email and your password will remain unchanged.</p>`
+      from: `"AI NewsBuzz Support" <${process.env.EMAIL_USER}>`,
+      to: user.email,
+      subject: 'Password Reset Request',
+      html: `<!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; }
+                .button { 
+                    display: inline-block; 
+                    padding: 10px 20px; 
+                    background-color: #4F46E5; 
+                    color: white; 
+                    text-decoration: none; 
+                    border-radius: 5px; 
+                    margin: 20px 0;
+                }
+            </style>
+        </head>
+        <body>
+            <p>You requested a password reset for your AI NewsBuzz account.</p>
+            <p>Click the button below to reset your password (valid for 1 hour):</p>
+            <a href="${resetUrl}" class="button">Reset Password</a>
+            <p>If you didn't request this, please ignore this email.</p>
+            <p>For security reasons, this link will expire in 1 hour.</p>
+        </body>
+        </html>`
     };
+
     await transporter.sendMail(mailOptions);
     
-    res.status(200).json({ message: 'If a user with that email exists, a password reset link has been sent.' });
+    res.status(200).json({ 
+      message: 'Password reset link sent to email if account exists' 
+    });
 
   } catch (error) {
     logger.error(`FORGOT_PASSWORD_ERROR: ${error.message}`);
-    res.status(500).json({ message: 'An error occurred. Please try again later.' });
+    
+    // Clear the reset token if email failed
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save({ validateBeforeSave: false });
+
+    res.status(500).json({ 
+      message: 'Error sending email. Please try again later.' 
+    });
   }
 };
 
 // VALIDATE RESET TOKEN: Check if the token is valid
 const validateResetToken = async (req, res) => {
   try {
-    // --- RE-CREATE THE FINGERPRINT (HASH) from the URL token ---
+    const token = req.params.token;
+    
+    if (!token) {
+      return res.status(400).json({ 
+        message: 'Token is required' 
+      });
+    }
+
     const hashedToken = crypto
       .createHash('sha256')
-      .update(req.params.token)
+      .update(token)
       .digest('hex');
 
-    // Find the user by the HASHED token and check for expiration
     const user = await User.findOne({
       passwordResetToken: hashedToken,
       passwordResetExpires: { $gt: Date.now() }
     });
 
     if (!user) {
-      return res.status(400).json({ message: 'Password reset token is invalid or has expired.' });
+      return res.status(400).json({ 
+        message: 'Token is invalid or has expired',
+        valid: false
+      });
     }
 
-    res.status(200).json({ message: 'Token is valid.' });
+    res.status(200).json({ 
+      message: 'Token is valid',
+      valid: true,
+      email: user.email 
+    });
+
   } catch (error) {
-    res.status(500).json({ message: 'Server error.' });
+    logger.error(`TOKEN_VALIDATION_ERROR: ${error.message}`);
+    res.status(500).json({ 
+      message: 'Error validating token' 
+    });
   }
 };
-
 // RESET PASSWORD: Update the user's password
 const resetPassword = async (req, res) => {
   try {
-    // --- RE-CREATE THE FINGERPRINT (HASH) one last time for security ---
+    const { token } = req.params;
+    const { password } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ 
+        message: 'Token is required' 
+      });
+    }
+
+    if (!password || password.length < 8) {
+      return res.status(400).json({ 
+        message: 'Password must be at least 8 characters' 
+      });
+    }
+
     const hashedToken = crypto
       .createHash('sha256')
-      .update(req.params.token)
+      .update(token)
       .digest('hex');
 
     const user = await User.findOne({
@@ -294,21 +361,48 @@ const resetPassword = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(400).json({ message: 'Password reset token is invalid or has expired.' });
+      return res.status(400).json({ 
+        message: 'Token is invalid or has expired' 
+      });
     }
 
-    // Set the new password (the pre-save hook will hash it)
-    user.password = req.body.password;
-    
-    // Clear the reset token fields so the link cannot be used again
+    // Update password
+    user.password = password;
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
-
+    
     await user.save();
 
-    res.status(200).json({ message: 'Password has been updated successfully.' });
+    // Send confirmation email
+    const mailOptions = {
+      from: `"AI NewsBuzz Support" <${process.env.EMAIL_USER}>`,
+      to: user.email,
+      subject: 'Password Changed Successfully',
+      html: `<!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; }
+            </style>
+        </head>
+        <body>
+            <p>Your AI NewsBuzz password has been successfully changed.</p>
+            <p>If you didn't make this change, please contact support immediately.</p>
+        </body>
+        </html>`
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({ 
+      message: 'Password updated successfully' 
+    });
+
   } catch (error) {
-    res.status(500).json({ message: 'Server error.' });
+    logger.error(`PASSWORD_RESET_ERROR: ${error.message}`);
+    res.status(500).json({ 
+      message: 'Error resetting password' 
+    });
   }
 };
 const googleAuth = async (req, res) => {
