@@ -3,7 +3,7 @@ import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const api = axios.create({ 
-  baseURL: API_URL,
+  baseURL: `${API_URL}/auth`,
   withCredentials: true // Enable cookies for sessions if needed
 });
 
@@ -104,22 +104,21 @@ export const logoutUser = async () => {
  */
 export const forgotPassword = async ({ email }) => {
     try {
-        const response = await authApi.post('/forgot-password', { email });
+        // FIX: Changed authApi to api
+        const response = await api.post('/forgot-password', { email });
         return response.data;
     } catch (error) {
-        // Throw a clean error message for react-query to catch
         throw new Error(error.response?.data?.message || 'Failed to send reset link.');
     }
 };
 
 /**
  * Asks the backend to validate a password reset token from the URL.
- * @param {string} token - The reset token.
- * @returns {Promise<object>} The validation message from the server.
  */
 export const validateResetToken = async (token) => {
     try {
-        const response = await authApi.get(`/reset-password/${token}`);
+        // FIX: Changed authApi to api
+        const response = await api.get(`/reset-password/${token}`);
         return response.data;
     } catch (error) {
         throw new Error(error.response?.data?.message || 'Invalid or expired token.');
@@ -128,12 +127,11 @@ export const validateResetToken = async (token) => {
 
 /**
  * Sends the new password to the backend to finalize the reset.
- * @param {{ token: string, password: string }} payload - The token and new password.
- * @returns {Promise<object>} The final success message from the server.
  */
 export const resetPassword = async ({ token, password }) => {
     try {
-        const response = await authApi.put(`/reset-password/${token}`, { password });
+        // FIX: Changed authApi to api
+        const response = await api.put(`/reset-password/${token}`, { password });
         return response.data;
     } catch (error) {
         throw new Error(error.response?.data?.message || 'Failed to update password.');
